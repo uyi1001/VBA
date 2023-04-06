@@ -1,0 +1,222 @@
+Auto Debit Backup Prep
+
+Sub f_AutoDebit()
+'
+' f_AutoDebit Macro
+' prepare dummy auto payment backups
+
+'
+
+Sheets("Auto Debit Vendor List").Select
+If IsEmpty(Range("B4")) Then
+    Range("B2").FormulaR1C1 = "=""Auto Debit Vendor List - "" & TEXT(TODAY(),""mmm"") & "" "" & YEAR(TODAY())"
+    Range("B2").Copy
+    Range("B2").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+    :=False, Transpose:=False
+    Application.CutCopyMode = False
+End If
+
+Dim Voucher As String
+Dim VDName As String
+Dim SDate As Date
+
+Voucher = Trim(InputBox("Enter Voucher number", "Voucher"))
+VDName = Trim(InputBox("Enter Vender Name", "Vendor Name"))
+SDate = Trim(InputBox("Enter Statement Date, mm/dd/yyyy,eg.1/31/2023", Date))
+
+Sheets("REF").Select
+ActiveSheet.Range("$A$1:$H$98").AutoFilter Field:=1
+ActiveSheet.Range("A:H").AutoFilter Field:=1, Criteria1:= _
+    VDName
+ActiveSheet.AutoFilter.Range.Offset(1).SpecialCells(xlCellTypeVisible).Range(Cells(1, 1), Cells(1, 8)).Select
+Selection.Copy
+
+Sheets("Auto Debit Vendor List").Select
+ActiveSheet.Range("B3:B100").Find("").Select
+Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+    :=False, Transpose:=False
+
+Cells(ActiveCell.Row, 5).Value = SDate
+
+Amt = InputBox("Enter Amount", "Amount")
+Cells(ActiveCell.Row, 6).Value = Amt
+
+answer = MsgBox("Change Due Date?", vbQuestion + vbYesNo + vbDefaultButton2, "Notice")
+If answer = vbYes Then
+    Cells(ActiveCell.Row, 9).Value = "Change Due Date"
+Else
+    Cells(ActiveCell.Row, 9).ClearContents
+End If
+
+If Cells(ActiveCell.Row, 8).Value = "FIXED" Then
+    Cells(ActiveCell.Row, 8).Font.Bold = True
+End If
+
+Dim VDCode As String
+
+VDCode = Right(Cells(ActiveCell.Row, 2), 8)
+
+LastRow = Worksheets("Auto Debit Vendor List").Cells(Rows.Count, 3).End(xlUp).Row
+VDcnt = WorksheetFunction.CountIf(Range(Sheets("Auto Debit Vendor List").Cells(4, 2), Sheets("Auto Debit Vendor List").Cells(LastRow, 2)), VDName)
+Dim rowN As Integer
+rowN = (VDcnt - 1) * 55
+
+Dim ShtName As String
+
+ShtName = VDCode
+
+If VDCode = "CA002749" Then
+    ShtName = "PAYROLL " & Format(Str(Month(SDate)), "00") & Format(Str(Day(SDate)), "00")
+    Sheets.Add After:=Worksheets("Auto Debit Vendor List")
+    ActiveSheet.Name = ShtName
+
+    MsgBox "Export and paste the payroll APs", , "Notice"
+    
+    ActiveSheet.Shapes.AddShape(msoShapeRoundedRectangle, 322.5, 196.5, 409.5, _
+        172.5).Select
+    Selection.ShapeRange.ShapeStyle = msoShapeStylePreset76
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "DONE PASTING"
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 12). _
+        ParagraphFormat
+        .FirstLineIndent = 0
+        .Alignment = msoAlignCenter
+    End With
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 12).Font
+        .NameComplexScript = "+mn-cs"
+        .NameFarEast = "+mn-ea"
+        .Fill.Visible = msoTrue
+        .Fill.ForeColor.ObjectThemeColor = msoThemeColorLight1
+        .Fill.ForeColor.TintAndShade = 0
+        .Fill.ForeColor.Brightness = 0
+        .Fill.Transparency = 0
+        .Fill.Solid
+        .Size = 54
+        .Name = "+mn-lt"
+    End With
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.OnAction = "PERSONAL.XLSB!f_AutoDebit2"
+    Range("A1").Select
+   
+Exit Sub
+    
+
+Else
+
+    If Evaluate("isref('" & ShtName & "'!A1)") Then
+        Sheets(ShtName).Select
+        Cells(rowN + 1, 1).Value = VDcnt & ". " & Voucher & ", $" & Format(Amt, "#,###.00") & ", " & Format(SDate, "m/d/yyyy")
+        Cells(rowN + 1, 1).Font.Bold = True
+        Cells(rowN + 3, 1).Value = "1. Voucher Copy"
+        Cells(rowN + 3, 13).Value = "2. Invoice Copy"
+        Cells(rowN + 3, 23).Value = "3. Bank Statement"
+        Cells(rowN + 3, 1).Select
+    Else
+        Sheets.Add After:=Worksheets("Auto Debit Vendor List")
+        ActiveSheet.Name = ShtName
+        Range("A1").FormulaR1C1 = VDName
+        Range("A2").FormulaR1C1 = VDcnt & ". " & Voucher & ", $" & Format(Amt, "#,###.00") & ", " & Format(SDate, "m/d/yyyy")
+        Range("A1", "A2").Font.Bold = True
+        Cells(4, 1).Value = "1. Voucher Copy"
+        Cells(4, 13).Value = "2. Invoice Copy"
+        Cells(4, 23).Value = "3. Bank Statement"
+        Cells(5, 1).Select
+    End If
+
+End If
+
+End Sub
+
+
+Sub f_AutoDebit2()
+'
+' f_AutoDebit2 Macro
+' Formatting for Payroll tab
+'
+
+'
+
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.Delete
+    
+    Range("D:D,G:I,K:M,O:AA").Select
+    Range("D:D,G:I,K:M,O:AA,AC:AQ").Select
+    Selection.Delete Shift:=xlToLeft
+    Range("A2").Select
+    
+    Range("A1:H18").Select
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideVertical)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.Borders(xlInsideHorizontal)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    
+    Range("A1:H1").Select
+    Selection.Font.Bold = True
+    Range("D19").Select
+    ActiveCell.FormulaR1C1 = "TOTAL"
+    Range("E19").Select
+    ActiveCell.FormulaR1C1 = "=SUM(R[-17]C:R[-1]C)"
+    Range("E2:E19").Style = "Comma"
+    
+    LastRow = Worksheets("Auto Debit Vendor List").Cells(Rows.Count, 3).End(xlUp).Row
+    Range("F19").Value = Sheets("Auto Debit Vendor List").Cells(LastRow, 6) - Range("E19")
+    Range("F19").Style = "Comma"
+    Range("F19").Select
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlNotEqual, _
+        Formula1:="=0"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Font
+        .Bold = True
+        .Italic = False
+        .Color = -16776961
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 65535
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+    
+    Range("D14:E19").Select
+    Selection.Font.Bold = True
+    Range("C2:C18").NumberFormat = "m/d/yyyy"
+    Range("G2:G18").NumberFormat = "m/d/yyyy"
+    Columns("A:H").EntireColumn.AutoFit
+    
+    Cells(21, 1).Value = "1. Invoice Copy"
+    Cells(21, 7).Value = "2. Bank Statement"
+    Cells(22, 1).Select
+End Sub
