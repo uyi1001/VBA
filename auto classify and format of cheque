@@ -1,0 +1,220 @@
+MP CHQ batch Step
+
+Sub c_MP_CHQ_Format()
+'
+' c_MP_CHQ_Format Macro
+' data preparation for MP CHQ batch
+'
+
+'
+    Call a_GeneralFormat
+    Selection.AutoFilter
+    ActiveSheet.Range("A:G").AutoFilter Field:=2, Criteria1:= _
+    "ENCI_ONE*", Operator:=xlFilterValues
+    Sheets.Add After:=ActiveSheet
+    Sheets("Sheet2").Select
+    Sheets("Sheet2").Name = "One Time"
+    Sheets("Sheet1").Select
+    Cells.Select
+    Selection.Copy
+    Sheets("One Time").Select
+    ActiveSheet.Paste
+    Cells.Select
+    Cells.EntireColumn.AutoFit
+    
+    Sheets("Sheet1").Select
+    ActiveSheet.Range("A:G").AutoFilter Field:=2, Criteria1:= _
+    "<>ENCI_ONE*", Operator:=xlFilterValues
+    Sheets.Add After:=ActiveSheet
+    Sheets("Sheet3").Select
+    Sheets("Sheet3").Name = "Vendors"
+    Sheets("Sheet1").Select
+    Cells.Select
+    Selection.Copy
+    Sheets("Vendors").Select
+    ActiveSheet.Paste
+    Cells.Select
+    Cells.EntireColumn.AutoFit
+    
+    Sheets("Sheet1").Select
+    Application.CutCopyMode = False
+    Sheets("Sheet1").Name = "ALL"
+    ActiveSheet.Range("A:G").AutoFilter Field:=2
+    
+    Sheets.Add After:=ActiveSheet
+    Sheets("Sheet4").Select
+    Sheets("Sheet4").Name = "OT Invoices"
+    
+    Sheets("One Time").Select
+    Range("H1").Select
+    ActiveCell.FormulaR1C1 = "Benificiary Name"
+    Range("I1").Select
+    ActiveCell.FormulaR1C1 = "Address 1"
+    Range("J1").Select
+    ActiveCell.FormulaR1C1 = "Address 2"
+    Range("K1").Select
+    ActiveCell.FormulaR1C1 = "zip"
+    Range("L1").Select
+    ActiveCell.FormulaR1C1 = "state"
+    Range("M1").Select
+    ActiveCell.FormulaR1C1 = "city"
+    Range("N1").Select
+    ActiveCell.FormulaR1C1 = "Hold/Release"
+    Range("O1").Select
+    ActiveCell.FormulaR1C1 = "Hold Status"
+    Range("P1").Select
+    ActiveCell.FormulaR1C1 = "Address Check"
+    Range("Q1").Select
+    ActiveCell.FormulaR1C1 = "Duplicate Check"
+    Range("R1").Select
+    ActiveCell.FormulaR1C1 = "FU Confirmed"
+    Range("S1").Select
+    ActiveCell.FormulaR1C1 = "Name Frequency Check"
+    Range("T1").Select
+    ActiveCell.FormulaR1C1 = "Address Frequency Check"
+    Range("U1").Select
+    ActiveCell.FormulaR1C1 = "Comp"
+    Range("A1").Select
+    ActiveCell.FormulaR1C1 = "=""count: ""&COUNTA(C[1])-1"
+    
+    Sheets("OT Invoices").Select
+    Cells(1, 1).Select
+    MsgBox "Download and copy paste the one time invoice list into SHEET: OT Invoices", , "Notice"
+    
+    ActiveSheet.Shapes.AddShape(msoShapeRoundedRectangle, 322.5, 196.5, 409.5, _
+        172.5).Select
+    Selection.ShapeRange.ShapeStyle = msoShapeStylePreset76
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "DONE PASTING"
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 12). _
+        ParagraphFormat
+        .FirstLineIndent = 0
+        .Alignment = msoAlignCenter
+    End With
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 12).Font
+        .NameComplexScript = "+mn-cs"
+        .NameFarEast = "+mn-ea"
+        .Fill.Visible = msoTrue
+        .Fill.ForeColor.ObjectThemeColor = msoThemeColorLight1
+        .Fill.ForeColor.TintAndShade = 0
+        .Fill.ForeColor.Brightness = 0
+        .Fill.Transparency = 0
+        .Fill.Solid
+        .Size = 54
+        .Name = "+mn-lt"
+    End With
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.OnAction = "PERSONAL.XLSB!c_MP_CHQ_Format2"
+    Range("A1").Select
+    
+
+
+    
+End Sub
+
+
+
+
+Sub c_MP_CHQ_Format2()
+'
+' c_MP_CHQ_Format2 Macro
+' vlookup preparation for one time vendors and do vendor check for regular vendors
+'
+
+'
+
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.Delete
+    
+    Sheets("One Time").Select
+    Range("H2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,12,0)"
+    Range("I2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,13,0)"
+    Range("J2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,14,0)"
+    Range("K2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,15,0)"
+    Range("L2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,16,0)"
+    Range("M2").Select
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC3,'OT Invoices'!C2:C18,17,0)"
+    
+    Range("H2:M2").Select
+    Selection.AutoFill Destination:=Range("H2", Cells(Range("A1").CurrentRegion.Rows.Count, "M"))
+    Columns("K:M").Select
+    Columns("K:M").EntireColumn.AutoFit
+    Columns("H:M").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    Range("S2").Select
+    ActiveCell.FormulaR1C1 = "=COUNTIF('OT Invoices'!C[-6],'One Time'!RC[-11])"
+    Selection.AutoFill Destination:=Range("S2", Cells(Range("A1").CurrentRegion.Rows.Count, "S"))
+    Columns("S:S").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    Range("T2").Select
+    ActiveCell.FormulaR1C1 = "=COUNTIF('OT Invoices'!C[-6],'One Time'!RC[-11])"
+    Selection.AutoFill Destination:=Range("T2", Cells(Range("A1").CurrentRegion.Rows.Count, "T"))
+    Columns("T:T").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    Range("U2").Select
+    ActiveCell.FormulaR1C1 = "=EXACT(RC[-2],RC[-1])"
+    Selection.AutoFill Destination:=Range("U2", Cells(Range("A1").CurrentRegion.Rows.Count, "U"))
+    Columns("U:U").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    Sheets("OT Invoices").Select
+    Range("M1").Select
+    Selection.Interior.Color = RGB(112, 173, 71)
+    Range("A1:W1").Select
+    Selection.AutoFilter
+
+    Sheets("One Time").Select
+    Range("H1").Select
+    Selection.Interior.Color = RGB(112, 173, 71)
+    
+    Sheets("ALL").Select
+    ActiveWindow.SelectedSheets.Visible = False
+    
+    VDLastRow = Sheets("Vendors").Cells(Sheets("Vendors").Rows.Count, "E").End(xlUp).Row
+    OTLastRow = Sheets("One Time").Cells(Sheets("One Time").Rows.Count, "E").End(xlUp).Row
+
+    Sheets("Vendors").Select
+    Range("E" & (VDLastRow + 1)).Select
+    ActiveCell.FormulaR1C1 = "=COUNTA(R[-" & VDLastRow - 1 & "]C:R[-1]C)"
+    Range("F" & (VDLastRow + 1)).Select
+    ActiveCell.FormulaR1C1 = "=SUM(R[-" & VDLastRow - 1 & "]C:R[-1]C)"
+    Selection.Style = "Comma"
+
+    Sheets("One Time").Select
+    Range("E" & (OTLastRow + 1)).Select
+    ActiveCell.FormulaR1C1 = "=COUNTA(R[-" & OTLastRow - 1 & "]C:R[-1]C)"
+    Range("F" & (OTLastRow + 1)).Select
+    ActiveCell.FormulaR1C1 = "=SUM(R[-" & OTLastRow - 1 & "]C:R[-1]C)"
+    Selection.Style = "Comma"
+
+    Sheets("Vendors").Select
+    Range("E" & (VDLastRow + 3)).Select
+    ActiveCell.Value = VDLastRow + OTLastRow - 2
+    Range("F" & (VDLastRow + 3)).Select
+    ActiveCell.Value = Sheets("Vendors").Range("F" & (VDLastRow + 1)).Value + Sheets("One Time").Range("F" & (OTLastRow + 1)).Value
+    Selection.Style = "Comma"
+
+    Call d_VendorCheck
+    MsgBox "Vendor check done, see highlighted cells", , "Notice"
+
+End Sub
