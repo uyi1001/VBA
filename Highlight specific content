@@ -1,0 +1,150 @@
+'Easiest but not most efficient way to do so
+
+4.	Review Vendor Check
+
+Sub d_VendorCheck()
+'
+' d_VendorCheck Macro
+' Highlight all suspicious transactions
+
+'
+
+Dim fnd As String
+Dim MyAr
+Dim i As Long
+Dim rng As Range, FoundCell As Range, LastCell As Range, myRange As Range
+
+Set myRange = ActiveSheet.UsedRange
+Set LastCell = myRange.Cells(myRange.Cells.Count)
+
+fnd = "dummy/offset"
+
+MyAr = Split(fnd, "/")
+
+    For i = LBound(MyAr) To UBound(MyAr)
+
+        Set FoundCell = myRange.Find(What:=MyAr(i), After:=LastCell)
+
+        If Not FoundCell Is Nothing Then
+            FirstFound = FoundCell.Address
+        End If
+Set rng = FoundCell
+            Do Until FoundCell Is Nothing
+                Set FoundCell = myRange.FindNext(After:=FoundCell)
+                    Set rng = Union(rng, FoundCell)
+                If FoundCell.Address = FirstFound Then Exit Do
+            Loop
+    If Not rng Is Nothing Then
+    rng.Interior.Color = 65535
+    End If
+    Next i
+
+
+
+Dim fnd2 As String
+Dim MyAr2
+Dim i2 As Long
+Dim rng2 As Range, FoundCell2 As Range, LastCell2 As Range, myRange2 As Range
+
+Set myRange2 = ActiveSheet.UsedRange
+Set LastCell2 = myRange2.Cells(myRange2.Cells.Count)
+
+fnd2 = "auto/auto create/autocreate"
+
+MyAr2 = Split(fnd2, "/")
+
+    For i2 = LBound(MyAr2) To UBound(MyAr2)
+
+        Set FoundCell2 = myRange2.Find(What:=MyAr2(i2), After:=LastCell2)
+
+        If Not FoundCell2 Is Nothing Then
+            FirstFound2 = FoundCell2.Address
+        End If
+Set rng2 = FoundCell2
+            Do Until FoundCell2 Is Nothing
+                Set FoundCell2 = myRange2.FindNext(After:=FoundCell2)
+                    Set rng2 = Union(rng2, FoundCell2)
+                If FoundCell2.Address = FirstFound2 Then Exit Do
+            Loop
+    If Not rng2 Is Nothing Then
+    rng2.Interior.Color = 49407
+    End If
+    Next i2
+
+
+
+Dim fnd3 As String
+Dim MyAr3
+Dim i3 As Long
+Dim rng3 As Range, FoundCell3 As Range, LastCell3 As Range, myRange3 As Range
+
+Set myRange3 = ActiveSheet.UsedRange
+Set LastCell3 = myRange3.Cells(myRange3.Cells.Count)
+
+fnd3 = "part"
+
+MyAr3 = Split(fnd3, "/")
+
+    For i3 = LBound(MyAr3) To UBound(MyAr3)
+
+        Set FoundCell3 = myRange3.Find(What:=MyAr3(i3), After:=LastCell3)
+
+        If Not FoundCell3 Is Nothing Then
+            FirstFound3 = FoundCell3.Address
+        End If
+Set rng3 = FoundCell3
+            Do Until FoundCell3 Is Nothing
+                Set FoundCell3 = myRange3.FindNext(After:=FoundCell3)
+                    Set rng3 = Union(rng3, FoundCell3)
+                If FoundCell3.Address = FirstFound3 Then Exit Do
+            Loop
+    If Not rng3 Is Nothing Then
+    rng3.Interior.Color = 5296274
+    End If
+    Next i3
+
+
+
+Dim fnd4 As String
+Dim MyAr4
+Dim i4 As Long
+Dim rng4 As Range, FoundCell4 As Range, LastCell4 As Range, myRange4 As Range
+
+Set myRange4 = ActiveSheet.UsedRange
+Set LastCell4 = myRange4.Cells(myRange4.Cells.Count)
+
+fnd4 = "US036123/US043948/CA005596/CA006820"
+
+MyAr4 = Split(fnd4, "/")
+
+    For i4 = LBound(MyAr4) To UBound(MyAr4)
+
+        Set FoundCell4 = myRange4.Find(What:=MyAr4(i4), After:=LastCell4)
+
+        If Not FoundCell4 Is Nothing Then
+            FirstFound4 = FoundCell4.Address
+        End If
+Set rng4 = FoundCell4
+            Do Until FoundCell4 Is Nothing
+                Set FoundCell4 = myRange4.FindNext(After:=FoundCell4)
+                    Set rng4 = Union(rng4, FoundCell4)
+                If FoundCell4.Address = FirstFound4 Then Exit Do
+            Loop
+    If Not rng4 Is Nothing Then
+    rng4.Interior.Color = 12611584
+    End If
+    Next i4
+
+Cells.Find(What:="Trading Partner", After:=ActiveCell, LookIn:= _
+    xlFormulas2, LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:= _
+    xlNext, MatchCase:=False, SearchFormat:=False).Activate
+With Selection.Interior
+    .Pattern = xlNone
+    .TintAndShade = 0
+    .PatternTintAndShade = 0
+End With
+
+Cells(1, 1).Select
+
+
+End Sub
