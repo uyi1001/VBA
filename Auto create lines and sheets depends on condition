@@ -25,7 +25,7 @@ VDName = Trim(InputBox("Enter Vender Name", "Vendor Name"))
 SDate = Trim(InputBox("Enter Statement Date, mm/dd/yyyy,eg.1/31/2023", Date))
 
 Sheets("REF").Select
-ActiveSheet.Range("$A$1:$H$98").AutoFilter Field:=1
+ActiveSheet.Range("A:H").AutoFilter Field:=1
 ActiveSheet.Range("A:H").AutoFilter Field:=1, Criteria1:= _
     VDName
 ActiveSheet.AutoFilter.Range.Offset(1).SpecialCells(xlCellTypeVisible).Range(Cells(1, 1), Cells(1, 8)).Select
