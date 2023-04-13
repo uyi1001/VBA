@@ -107,10 +107,8 @@ Sub c_MP_CHQ_Format()
     Selection.OnAction = "PERSONAL.XLSB!c_MP_CHQ_Format2"
     Range("A1").Select
     
-
-
-    
 End Sub
+
 
 
 
@@ -216,5 +214,146 @@ Sub c_MP_CHQ_Format2()
 
     Call d_VendorCheck
     MsgBox "Vendor check done, see highlighted cells", , "Notice"
+    
+    Sheets("One Time").Select
+    Range("A1").Select
+    MsgBox "Copy last week's hold list after One Time sheet", , "Notice"
+        
+    ActiveSheet.Shapes.AddShape(msoShapeRoundedRectangle, 322.5, 196.5, 409.5, _
+        172.5).Select
+    Selection.ShapeRange.ShapeStyle = msoShapeStylePreset76
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "DONE COPY"
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 9). _
+        ParagraphFormat
+        .FirstLineIndent = 0
+        .Alignment = msoAlignCenter
+    End With
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 9).Font
+        .NameComplexScript = "+mn-cs"
+        .NameFarEast = "+mn-ea"
+        .Fill.Visible = msoTrue
+        .Fill.ForeColor.ObjectThemeColor = msoThemeColorLight1
+        .Fill.ForeColor.TintAndShade = 0
+        .Fill.ForeColor.Brightness = 0
+        .Fill.Transparency = 0
+        .Fill.Solid
+        .Size = 54
+        .Name = "+mn-lt"
+    End With
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.OnAction = "PERSONAL.XLSB!c_MP_CHQ_Format3"
+    Range("A1").Select
 
+End Sub
+
+
+
+
+
+Sub c_MP_CHQ_Format3()
+'
+' c_MP_CHQ_Format3 Macro
+' duplicate check of one time cheques
+'
+
+'
+
+    Dim OTws As Worksheet
+    Set OTws = Sheets("One Time")
+    OTws.Select
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.Delete
+    
+    Range("N2").Select
+    
+    OldHL = Sheets(5).Name
+    
+    ActiveCell.FormulaR1C1 = "=VLOOKUP(RC[-11],'" & OldHL & "'!C[-12]:C[-1],12,0)"
+    Selection.AutoFill Destination:=Range("N2:N" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row)
+    Range("N2:N" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Selection.Replace What:="#N/A", Replacement:="", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    Application.CutCopyMode = False
+   
+    Range("B1").Select
+    Selection.AutoFilter
+    
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=21, Criteria1:="FALSE"
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=14, Criteria1:="="
+
+    ActiveSheet.AutoFilter.Range.Offset(0).SpecialCells(xlCellTypeVisible).Range(Cells(1, 2), Cells(1, 21)).Select
+    Range(Selection, Selection.End(xlDown)).Select
+
+    Selection.Copy
+    Sheets.Add After:=ActiveSheet
+    ActiveSheet.Paste
+    ActiveSheet.Name = "Temp Hold"
+    Application.CutCopyMode = False
+    OTws.Select
+
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=21
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=14
+    
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=21, Criteria1:="TRUE"
+    ActiveSheet.Range("A1:U" & OTws.Cells(OTws.Rows.Count, 2).End(xlUp).Row).AutoFilter Field:=19, Criteria1:=">1", _
+        Operator:=xlAnd
+    
+    ActiveSheet.AutoFilter.Range.Offset(1).SpecialCells(xlCellTypeVisible).Range(Cells(1, 2), Cells(1, 21)).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    
+    Selection.Copy
+    Sheets("Temp Hold").Select
+    
+    PasteL = Sheets("Temp Hold").Cells(Sheets("Temp Hold").Rows.Count, 1).End(xlUp).Row + 1
+        
+    ActiveSheet.Range("A" & PasteL).Select
+    ActiveSheet.Paste
+    Application.CutCopyMode = False
+    
+    Range("A1").AutoFilter
+    
+    ActiveSheet.Range("A:T").AutoFilter Field:=13, Criteria1:="<>"
+    ActiveSheet.AutoFilter.Range.Offset(1).SpecialCells(xlCellTypeVisible).Range(Cells(1, 1), Cells(1, 20)).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Delete Shift:=xlUp
+
+    Range("A1").Select
+    Selection.AutoFilter
+    
+    OTws.Select
+    Range("A1").Select
+    Selection.AutoFilter
+    
+    ActiveSheet.Shapes.AddShape(msoShapeRoundedRectangle, 1.5, 15, 35.25, 15.75). _
+        Select
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "Add"
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 3). _
+        ParagraphFormat
+        .FirstLineIndent = 0
+        .Alignment = msoAlignCenter
+    End With
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 3).Font
+        .Bold = msoTrue
+        .NameComplexScript = "+mn-cs"
+        .NameFarEast = "+mn-ea"
+        .Fill.Visible = msoTrue
+        .Fill.ForeColor.ObjectThemeColor = msoThemeColorLight1
+        .Fill.ForeColor.TintAndShade = 0
+        .Fill.ForeColor.Brightness = 0
+        .Fill.Transparency = 0
+        .Fill.Solid
+        .Size = 11
+        .Name = "+mn-lt"
+    End With
+    
+    ActiveSheet.Shapes.Range(Array("Rounded Rectangle 2")).Select
+    Selection.OnAction = "PERSONAL.XLSB!h_AddressVerification_1AddressComplete"
+    Range("A1").Select
+    
 End Sub
