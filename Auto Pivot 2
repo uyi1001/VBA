@@ -1,0 +1,572 @@
+Sub i_SuspensionTarget()
+'
+' i_SuspensionTarget Macro
+' pivot for aged unprocessed transactions
+
+'
+    Sheets("ag-grid").Name = "ag-grid_All"
+    Set all = Sheets("ag-grid_All")
+    
+    LastRowA = all.Cells(Rows.Count, 1).End(xlUp).Row
+    
+    Range("D:F", "S:S").Replace What:=",", Replacement:="", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    Columns("C:C").TextToColumns Destination:=Range("C1"), DataType:=xlDelimited, _
+        TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=True, _
+        Semicolon:=False, Comma:=False, Space:=False, Other:=False, FieldInfo _
+        :=Array(1, 3), TrailingMinusNumbers:=True
+    Columns("O:O").Replace What:="Digital e-Enterprise", Replacement:="DXP", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    Columns("O:O").Replace What:="CS Innovation", Replacement:="SERVICE & QUALITY", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    Columns("O:O").Replace What:="CS SVC Network", Replacement:="CS CE Network", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    Columns("O:O").Replace What:="CS Case Management", Replacement:="CS Painpoint Innovation", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+
+    Columns("C:C").Insert Shift:=xlToRight
+    Range("C1").Value = "exp type"
+    Columns("Q:Q").Insert Shift:=xlToRight
+    Range("Q1").Value = "BU"
+    
+    Range("A1").Select
+    Selection.AutoFilter
+    
+    all.Range("$A$1:$AI$" & LastRowA).AutoFilter Field:=2, Criteria1:= _
+        "PAYMENT RECEIVED -- THANK YOU"
+    all.Range("C2:C" & LastRowA).SpecialCells(xlCellTypeVisible).Value = "PERSONAL PAY"
+
+    all.Range("$A$1:$AI$" & LastRowA).AutoFilter Field:=2, Criteria1:= _
+        "LG Canada 550 Matheson BlMississauga  ON"
+    all.Range("C2:C" & LastRowA).SpecialCells(xlCellTypeVisible).Value = "LG PAYMENT"
+    
+    all.Range("$A$1:$AI$" & LastRowA).AutoFilter Field:=2, Criteria1:= _
+        "LATE PAYMENT FEE"
+    all.Range("C2:C" & LastRowA).SpecialCells(xlCellTypeVisible).Value = "INTEREST CHARGE"
+
+    all.Range("A:AI").AutoFilter Field:=2
+    
+    MsgBox "Copy BU Sheet", , "Notice"
+       
+    all.Shapes.AddShape(msoShapeRoundedRectangle, 322.5, 196.5, 409.5, _
+        172.5).Select
+    Selection.ShapeRange.ShapeStyle = msoShapeStylePreset76
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "DONE COPY"
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 9). _
+        ParagraphFormat
+        .FirstLineIndent = 0
+        .Alignment = msoAlignCenter
+    End With
+    With Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 9).Font
+        .NameComplexScript = "+mn-cs"
+        .NameFarEast = "+mn-ea"
+        .Fill.Visible = msoTrue
+        .Fill.ForeColor.ObjectThemeColor = msoThemeColorLight1
+        .Fill.ForeColor.TintAndShade = 0
+        .Fill.ForeColor.Brightness = 0
+        .Fill.Transparency = 0
+        .Fill.Solid
+        .Size = 54
+        .Name = "+mn-lt"
+    End With
+    all.Shapes.Range(Array("Rounded Rectangle 1")).Select
+    Selection.OnAction = "PERSONAL.XLSB!i_SuspensionTarget2"
+    Range("A1").Select
+
+End Sub
+
+
+
+
+
+Sub i_SuspensionTarget2()
+'
+' i_SuspensionTarget2 Macro
+' pivot for aged unprocessed transactions step 2
+
+'
+
+    Set all = Sheets("ag-grid_All")
+    LastRowA = all.Cells(Rows.Count, 1).End(xlUp).Row
+
+    all.Shapes.Range(Array("Rounded Rectangle 1")).Delete
+    
+    all.Select
+    
+    Range("Q2").FormulaR1C1 = "=VLOOKUP(RC[-1],BU!C[-16]:C[-15],2,0)"
+    Range("Q2").AutoFill Destination:=Range("Q2:Q" & LastRowA)
+    Range("Q:Q").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+        
+    Sheets.Add(After:=all).Name = "Processed"
+    all.Range("$A$1:$AI$" & LastRowA).AutoFilter Field:=8, Criteria1:= _
+        "=Closed", Operator:=xlOr, Criteria2:="=Transferred"
+    all.Select
+    Cells.Select
+    Selection.Copy
+    Sheets("Processed").Paste
+    
+    Application.CutCopyMode = False
+    all.Range("A:AI").AutoFilter Field:=8
+    all.Range("A1").Select
+    
+    Sheets.Add(Before:=all).Name = "CCTXN_PENDING"
+    all.Range("$A$1:$AI$" & LastRowA).AutoFilter Field:=8, Criteria1:=Array( _
+        "Approving", "Draft", "Open"), Operator:=xlFilterValues
+    all.Select
+    Cells.Select
+    Selection.Copy
+    Sheets("CCTXN_PENDING").Paste
+    Dim Pending As Worksheet
+    Set Pending = Sheets("CCTXN_PENDING")
+    
+    Application.CutCopyMode = False
+    all.Range("A:AI").AutoFilter Field:=8
+    all.Range("A1").Select
+    Pending.Select
+    
+    Rows("1:3").Select
+    Selection.Insert Shift:=xlDown
+    
+    Range("A2").Value = Trim(InputBox("Enter Start Date, mm/dd/yyyy, eg.1/1/2023", "Date", "1/1/2023"))
+    Range("A1").FormulaR1C1 = _
+        "= ""CARD TXN: "" & TEXT(R[1]C,""MMM d, yyyy"") & "" ~ "" & TEXT(TODAY(),""MMM d, yyyy"")&"" - APPROVING, DRAFT, OPEN ONLY"""
+    Range("A1").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A2").FormulaR1C1 = "=""RUN DATE: "" & TEXT(TODAY(),""MMM d, yyyy"")"
+
+    Range("D:D").Insert Shift:=xlToRight
+    Range("D4").Value = "AGING"
+    Range("D:D").Insert Shift:=xlToRight
+    Range("D4").Value = "LAST AGING"
+    Range("F3").FormulaR1C1 = "=TODAY()"
+    Range("E2").Value = "Last Run Date"
+    Range("F2").Value = Trim(InputBox("Enter Last Run Date, mm/dd/yyyy, eg.1/1/2023", "Last Run Date"))
+    Range("F2:F3").Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 65535
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    
+    Rows("1:3").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("G2:G3").FormulaR1C1 = "=RC[-1]-14"
+    LastRowP = Pending.Cells(Rows.Count, 1).End(xlUp).Row
+    Range("E5").FormulaR1C1 = "=IF(R3C6-RC[1]>14,""1. Over 14D"",""2. Within 14D"")"
+    Range("E5").Select
+    Selection.AutoFill Destination:=Range("E5:E" & LastRowP)
+    Range("D5").FormulaR1C1 = "=IF(R2C6-RC[2]>14,""1. Over 14D"",""2. Within 14D"")"
+    Range("D5").Select
+    Selection.AutoFill Destination:=Range("D5:D" & LastRowP)
+    
+    Pending.Range("$A$4:$AK$" & LastRowP).AutoFilter Field:=5, Criteria1:= _
+        "2. Within 14D"
+    Range("E4").End(xlDown).Select
+    With Selection.Font
+        .Color = -16776961
+        .TintAndShade = 0
+    End With
+    Pending.Range("A:AK").AutoFilter Field:=5
+    Columns("D:G").EntireColumn.AutoFit
+    
+    Range("A1").Select
+    Sheets.Add
+    Sheets(1).Name = "Sheet1"
+    PDataSource = "CCTXN_PENDING!R4C1:R" & LastRowP & "C37"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        PDataSource, Version:=8).CreatePivotTable TableDestination _
+        :="Sheet1!R5C1", TableName:="Summary", DefaultVersion:=8
+    
+    Sheets("Sheet1").Select
+    Cells(5, 1).Select
+    
+    With ActiveSheet.PivotTables("Summary")
+        .ColumnGrand = True
+        .HasAutoFormat = True
+        .DisplayErrorString = False
+        .DisplayNullString = True
+        .EnableDrilldown = True
+        .ErrorString = ""
+        .MergeLabels = False
+        .NullString = ""
+        .PageFieldOrder = 2
+        .PageFieldWrapCount = 0
+        .PreserveFormatting = True
+        .RowGrand = True
+        .SaveData = True
+        .PrintTitles = False
+        .RepeatItemsOnEachPrintedPage = True
+        .TotalsAnnotation = False
+        .CompactRowIndent = 1
+        .InGridDropZones = False
+        .DisplayFieldCaptions = True
+        .DisplayMemberPropertyTooltips = False
+        .DisplayContextTooltips = True
+        .ShowDrillIndicators = True
+        .PrintDrillIndicators = False
+        .AllowMultipleFilters = False
+        .SortUsingCustomLists = True
+        .FieldListSortAscending = False
+        .ShowValuesRow = False
+        .CalculatedMembersInFilters = False
+        .RowAxisLayout xlCompactRow
+    End With
+    With ActiveSheet.PivotTables("Summary").PivotCache
+        .RefreshOnFileOpen = False
+        .MissingItemsLimit = xlMissingItemsDefault
+    End With
+    ActiveSheet.PivotTables("Summary").RepeatAllLabels xlRepeatLabels
+    With ActiveSheet.PivotTables("Summary").PivotFields("BU")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Summary").PivotFields("AGING")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Summary").PivotFields("Status")
+        .Orientation = xlColumnField
+        .Position = 2
+    End With
+    ActiveSheet.PivotTables("Summary").AddDataField ActiveSheet.PivotTables( _
+        "Summary").PivotFields("Amt(Local)"), "Sum of Amt(Local)", xlSum
+    Range("A5").Select
+    ActiveSheet.PivotTables("Summary").PivotSelect "", xlDataAndLabel, True
+    Range("A6").Select
+    ActiveSheet.PivotTables("Summary").RowAxisLayout xlTabularRow
+    Cells.Select
+    Selection.Style = "Comma"
+    Range("E6").Select
+    With Selection.Font
+        .Color = -16776961
+        .TintAndShade = 0
+    End With
+    
+    Sheets("Sheet1").Name = "SUM BY LGECI"
+
+    Range("A1").Value = "Unprocessed Corporate Card Balance Status by BU"
+    Range("A1").Font.Bold = True
+    Range("A2:A3").FormulaR1C1 = "=CCTXN_PENDING!R[-1]C"
+    Range("A2:A3").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    
+    Pending.Select
+    
+    Sheets.Add(Before:=Sheets(1)).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        PDataSource, Version:=8).CreatePivotTable TableDestination _
+        :="Sheet1!R8C1", TableName:="BUDetail", DefaultVersion:=8
+    
+    Sheets("Sheet1").Select
+    Cells(8, 1).Select
+    
+    With ActiveSheet.PivotTables("BUDetail")
+        .ColumnGrand = True
+        .HasAutoFormat = True
+        .DisplayErrorString = False
+        .DisplayNullString = True
+        .EnableDrilldown = True
+        .ErrorString = ""
+        .MergeLabels = False
+        .NullString = ""
+        .PageFieldOrder = 2
+        .PageFieldWrapCount = 0
+        .PreserveFormatting = True
+        .RowGrand = True
+        .SaveData = True
+        .PrintTitles = False
+        .RepeatItemsOnEachPrintedPage = True
+        .TotalsAnnotation = False
+        .CompactRowIndent = 1
+        .InGridDropZones = False
+        .DisplayFieldCaptions = True
+        .DisplayMemberPropertyTooltips = False
+        .DisplayContextTooltips = True
+        .ShowDrillIndicators = True
+        .PrintDrillIndicators = False
+        .AllowMultipleFilters = False
+        .SortUsingCustomLists = True
+        .FieldListSortAscending = False
+        .ShowValuesRow = False
+        .CalculatedMembersInFilters = False
+        .RowAxisLayout xlCompactRow
+    End With
+    With ActiveSheet.PivotTables("BUDetail").PivotCache
+        .RefreshOnFileOpen = False
+        .MissingItemsLimit = xlMissingItemsDefault
+    End With
+    ActiveSheet.PivotTables("BUDetail").RepeatAllLabels xlDoNotRepeatLabels
+    With ActiveSheet.PivotTables("BUDetail").PivotFields("Department")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("BUDetail").PivotFields("Emp Name")
+        .Orientation = xlRowField
+        .Position = 2
+    End With
+    With ActiveSheet.PivotTables("BUDetail").PivotFields("AGING")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("BUDetail").PivotFields("Status")
+        .Orientation = xlColumnField
+        .Position = 2
+    End With
+    ActiveSheet.PivotTables("BUDetail").AddDataField ActiveSheet.PivotTables( _
+        "BUDetail").PivotFields("Amt(Local)"), "Sum of Amt(Local)", xlSum
+    With ActiveSheet.PivotTables("BUDetail").PivotFields("BU")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    
+    ActiveSheet.PivotTables("BUDetail").RowAxisLayout xlTabularRow
+
+    ActiveSheet.PivotTables("BUDetail").PivotFields("AGING").Subtotals = Array( _
+        True, False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").PivotFields("Amt(Local)").Subtotals = _
+        Array(True, False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").PivotFields("Status").Subtotals = Array( _
+        True, False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").PivotFields("Emp Name").Subtotals = _
+        Array(True, False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").PivotFields("Department").Subtotals = _
+        Array(False, False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").PivotFields("BU").Subtotals = Array(True _
+        , False, False, False, False, False, False, False, False, False, False, False)
+    ActiveSheet.PivotTables("BUDetail").SubtotalLocation xlAtBottom
+
+    Range("F9").Select
+    With Selection.Font
+        .Color = -16776961
+        .TintAndShade = 0
+    End With
+
+    Sheets("Sheet1").Name = "SUM BY BU"
+    Sheets("SUM BY BU").Select
+    
+    Range("A1").Select
+    ActiveCell.FormulaR1C1 = "Unprocessed Corporate Card Balance by Status"
+    Range("A1").Font.Bold = True
+    Range("A2:A3").FormulaR1C1 = "=CCTXN_PENDING!R[-1]C"
+    Range("A4").FormulaR1C1 = _
+        "=""OVERDUE CUT OFF: ~ "" & TEXT(TODAY()-15, ""MMM d, yyyy"")"
+    Range("A2:A4").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    
+    ActiveSheet.PivotTables("BUDetail").PivotFields("BU").CurrentPage = "CFO"
+    Range("A1").Select
+    
+    Pending.Select
+
+    Sheets.Add(Before:=Sheets(1)).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        PDataSource, Version:=8).CreatePivotTable TableDestination _
+        :="Sheet1!R7C1", TableName:="Targets", DefaultVersion:=8
+    
+    Sheets("Sheet1").Select
+    Cells(7, 1).Select
+    
+    With ActiveSheet.PivotTables("Targets")
+        .ColumnGrand = True
+        .HasAutoFormat = True
+        .DisplayErrorString = False
+        .DisplayNullString = True
+        .EnableDrilldown = True
+        .ErrorString = ""
+        .MergeLabels = False
+        .NullString = ""
+        .PageFieldOrder = 2
+        .PageFieldWrapCount = 0
+        .PreserveFormatting = True
+        .RowGrand = True
+        .SaveData = True
+        .PrintTitles = False
+        .RepeatItemsOnEachPrintedPage = True
+        .TotalsAnnotation = False
+        .CompactRowIndent = 1
+        .InGridDropZones = False
+        .DisplayFieldCaptions = True
+        .DisplayMemberPropertyTooltips = False
+        .DisplayContextTooltips = True
+        .ShowDrillIndicators = True
+        .PrintDrillIndicators = False
+        .AllowMultipleFilters = False
+        .SortUsingCustomLists = True
+        .FieldListSortAscending = False
+        .ShowValuesRow = False
+        .CalculatedMembersInFilters = False
+        .RowAxisLayout xlCompactRow
+    End With
+    With ActiveSheet.PivotTables("Targets").PivotCache
+        .RefreshOnFileOpen = False
+        .MissingItemsLimit = xlMissingItemsDefault
+    End With
+    ActiveSheet.PivotTables("Targets").RepeatAllLabels xlDoNotRepeatLabels
+    With ActiveSheet.PivotTables("Targets").PivotFields("BU")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Targets").PivotFields("Emp Name")
+        .Orientation = xlRowField
+        .Position = 2
+    End With
+    With ActiveSheet.PivotTables("Targets").PivotFields("Status")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Targets").PivotFields("AGING")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    ActiveSheet.PivotTables("Targets").AddDataField ActiveSheet.PivotTables( _
+        "Targets").PivotFields("Amt(Local)"), "Sum of Amt(Local)", xlSum
+    ActiveSheet.PivotTables("Targets").RowAxisLayout xlTabularRow
+
+    ActiveSheet.PivotTables("Targets").PivotFields("AGING").ClearAllFilters
+    ActiveSheet.PivotTables("Targets").PivotFields("AGING").CurrentPage = _
+        "1. Over 14D"
+    Cells.Select
+    Selection.Style = "Comma"
+
+    Range("A1").FormulaR1C1 = _
+        "=""CARD AGING AS OF "" & TEXT(TODAY(), ""MMM d, yyyy"") & "" - SUSPENSION TARGET REVIEW"""
+    Range("A1").Font.Bold = True
+    Range("A2").FormulaR1C1 = "=""RUN DATE: "" & TEXT(TODAY(), ""MMM d, yyyy"")"
+    Range("A3").FormulaR1C1 = _
+        "=""OD CUT OFF: ~ "" & TEXT(TODAY()-15, ""MMM d, yyyy"") & ""  --> WAITI TILL "" & TEXT(TODAY()+7, ""MMM d, yyyy"")"
+    Range("A1:A3").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    DStr = Str(Year(Date) & Right("0" & Month(Date), 2) & Right("0" & Day(Date), 2))
+    Sheets("Sheet1").Name = "Suspension Target_" & DStr
+    
+    Range("A1").Select
+    
+    Pending.Select
+
+    Sheets.Add(Before:=Sheets(1)).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        PDataSource, Version:=8).CreatePivotTable TableDestination _
+        :="Sheet1!R7C1", TableName:="Suspend", DefaultVersion:=8
+    
+    Sheets("Sheet1").Select
+    Cells(7, 1).Select
+    
+    With ActiveSheet.PivotTables("Suspend")
+        .ColumnGrand = True
+        .HasAutoFormat = True
+        .DisplayErrorString = False
+        .DisplayNullString = True
+        .EnableDrilldown = True
+        .ErrorString = ""
+        .MergeLabels = False
+        .NullString = ""
+        .PageFieldOrder = 2
+        .PageFieldWrapCount = 0
+        .PreserveFormatting = True
+        .RowGrand = True
+        .SaveData = True
+        .PrintTitles = False
+        .RepeatItemsOnEachPrintedPage = True
+        .TotalsAnnotation = False
+        .CompactRowIndent = 1
+        .InGridDropZones = False
+        .DisplayFieldCaptions = True
+        .DisplayMemberPropertyTooltips = False
+        .DisplayContextTooltips = True
+        .ShowDrillIndicators = True
+        .PrintDrillIndicators = False
+        .AllowMultipleFilters = False
+        .SortUsingCustomLists = True
+        .FieldListSortAscending = False
+        .ShowValuesRow = False
+        .CalculatedMembersInFilters = False
+        .RowAxisLayout xlCompactRow
+    End With
+    With ActiveSheet.PivotTables("Suspend").PivotCache
+        .RefreshOnFileOpen = False
+        .MissingItemsLimit = xlMissingItemsDefault
+    End With
+    ActiveSheet.PivotTables("Suspend").RepeatAllLabels xlDoNotRepeatLabels
+    With ActiveSheet.PivotTables("Suspend").PivotFields("BU")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Suspend").PivotFields("Emp Name")
+        .Orientation = xlRowField
+        .Position = 2
+    End With
+    With ActiveSheet.PivotTables("Suspend").PivotFields("Status")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("Suspend").PivotFields("LAST AGING")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    ActiveSheet.PivotTables("Suspend").AddDataField ActiveSheet.PivotTables( _
+        "Suspend").PivotFields("Amt(Local)"), "Sum of Amt(Local)", xlSum
+    ActiveSheet.PivotTables("Suspend").RowAxisLayout xlTabularRow
+
+    ActiveSheet.PivotTables("Suspend").PivotFields("LAST AGING").ClearAllFilters
+    ActiveSheet.PivotTables("Suspend").PivotFields("LAST AGING").CurrentPage = _
+        "1. Over 14D"
+    Cells.Select
+    Selection.Style = "Comma"
+
+    Range("A1").FormulaR1C1 = _
+        "=""CARD AGING AS OF "" & TEXT(CCTXN_PENDING!R[1]C[5], ""MMM dd, yyyy"") & "" - SUSPENSION LIST"""
+    Range("A1").Font.Bold = True
+    Range("A2").FormulaR1C1 = "=""RUN DATE: "" & TEXT(TODAY(), ""MMM d, yyyy"")"
+    Range("A3").FormulaR1C1 = _
+        "=""OD CUT OFF: ~ "" & TEXT(CCTXN_PENDING!R[-1]C[5]-15, ""MMM dd, yyyy"") & ""  --> WAITI TILL "" & TEXT(CCTXN_PENDING!R[-1]C[5]+7, ""MMM dd, yyyy"")"
+    Range("A1:A3").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Sheets("Sheet1").Name = "Suspension List"
+    Range("A1").Select
+    
+    
+    
+    
+    
+
+
+
+
+End Sub
+
