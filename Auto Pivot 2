@@ -570,3 +570,41 @@ Sub i_SuspensionTarget2()
 
 End Sub
 
+
+
+
+
+#pivot filter
+
+
+    ActiveSheet.PivotTables("Suspend").PivotFields("Transaction Month").ClearAllFilters
+    ActiveSheet.PivotTables("Suspend").PivotFields("Transaction Month"). _
+        CurrentPage = "(All)"
+    mon = MonthName(Month(Date), True)
+    With ActiveSheet.PivotTables("Suspend").PivotFields("Transaction Month")
+        .PivotItems(mon).Visible = False
+    End With
+    With ActiveSheet.PivotTables("Suspend").PivotFields("Sum of Amt(Local)")
+        .NumberFormat = "#,##0.00"
+    End With
+    
+    Range("A1").FormulaR1C1 = _
+        "=""CARD AGING AS OF Previous Month(s) - SUSPENSION LIST"""
+    Range("A1").Font.Bold = True
+    
+    Range("A2:A3").FormulaR1C1 = "=CCTXN_PENDING!R[-1]C"
+    
+    Range("A1:A3").Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    If Day(Date) - 15 > 0 Then
+    Sheets("Sheet1").Name = "Suspension List of " & mon
+    Else
+    Sheets("Sheet1").Name = "Suspension Targets of " & mon
+    End If
+    Range("A1").Select
+
+
