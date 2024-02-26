@@ -7,7 +7,7 @@ Sub g_OutstandingCheque()
 '
 
 '
-    ActiveSheet.Copy After:=Sheets(1)
+    ActiveSheet.Copy after:=Sheets(1)
     
     Sheets(1).Name = "raw"
     Sheets(2).Name = "OS CHQ LIST"
@@ -110,7 +110,7 @@ Sub g_OutstandingCheque()
         SkipBlanks:=False, Transpose:=False
     Application.CutCopyMode = False
 
-    Sheets.Add After:=Sheets(2)
+    Sheets.Add after:=Sheets(2)
     
     With Sheets("OS CHQ LIST")
         LastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
@@ -119,8 +119,8 @@ Sub g_OutstandingCheque()
     End With
 
     ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
-        SCData, Version:=8).CreatePivotTable TableDestination:= _
-        "Sheet2!R3C1", TableName:="PivotTable1", DefaultVersion:=8
+        SCData).CreatePivotTable TableDestination:= _
+        "Sheet2!R3C1", TableName:="PivotTable1"
     Sheets("Sheet2").Select
     Sheets(3).Name = "Summary"
     Cells(3, 1).Select
@@ -174,12 +174,39 @@ Sub g_OutstandingCheque()
     Selection.Style = "Comma"
     Range("A1").FormulaR1C1 = "Outstanding CHQ List"
     Range("A1").Font.Bold = True
-Range("A2").FormulaR1C1 = "=""As of ""&TEXT(TODAY(),""mm/dd/yyyy"")"
-    Range("A2").Select
-    Selection.Copy
-    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
-        :=False, Transpose:=False
-    Application.CutCopyMode = False
+    Range("A2").FormulaR1C1 = "=""As of ""&TEXT(TODAY(),""mm/dd/yyyy"")"
     Range("F1").Select
+    
+    Sheets("OS CHQ LIST").Select
+    
+    ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort.SortFields.Add2 Key _
+        :=Range("B1:B679"), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal
+    With ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort.SortFields.Add2 Key _
+        :=Range("H1:H679"), SortOn:=xlSortOnValues, Order:=xlDescending, _
+        DataOption:=xlSortNormal
+    With ActiveWorkbook.Worksheets("OS CHQ LIST").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    
+    Sheets("Summary").Select
+    Range("F1").Select
+    
+    SLocation = "E:\0. Outstanding Cheque (Friday)\Outstanding CHQ List_" & Format(Date, "yyyymmdd") & ".xlsx"
+    ActiveWorkbook.SaveAs Filename:=SLocation, FileFormat:=xlWorkbookDefault
+    
         
 End Sub
