@@ -1,0 +1,416 @@
+Sub PLP_Report_WorkingFile()
+'
+' PLP_Report_WorkingFile Macro
+'
+
+'
+
+    Set raw = Sheets("close order raw")
+    LRraw = raw.Cells(Rows.Count, 1).End(xlUp).Row
+    RpDate = Trim(InputBox("Enter Report Date, m/d/yyyy,eg.1/31/2023", "Date", Date))
+    Sheets("close order raw").Name = MonthName(Month(RpDate), True) & " " & Day(RpDate) & " close order raw"
+    
+    Sheets.Add(After:=raw).Name = MonthName(Month(RpDate), True) & " " & Day(RpDate) & " close order"
+    Set PLPorder = Sheets(MonthName(Month(RpDate), True) & " " & Day(RpDate) & " close order")
+    
+    raw.Select
+    Range("BW1").AutoFilter
+    ActiveSheet.Range("$A$1:$BZ$" & LRraw).AutoFilter Field:=75, Criteria1:="<>"
+    Cells.Select
+    Selection.Copy
+    PLPorder.Paste
+    Application.CutCopyMode = False
+    ActiveSheet.ShowAllData
+    Range("A1").Select
+    
+    Columns("H:H").Insert Shift:=xlToRight
+    Range("H1").Value = "Total G. Sales"
+    Range("H2").FormulaR1C1 = "=RC[-2]*RC[-1]"
+    Range("H2").AutoFill Destination:=Range("H2:H" & LRraw)
+    Range("H1").Interior.Color = 65535
+    PLPorder.Range("C1, E1, F1, G1, Q1, AB1, AJ1, AP1, AQ1, BW1").Interior.Color = 65535
+    
+    RawDSource = raw.Name & "!R1C1:R" & LRraw & "C79"
+    Sheets.Add(Before:=raw).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        RawDSource).CreatePivotTable _
+        TableDestination:="Sheet1!R4C1", TableName:="close_order"
+    Sheets("Sheet1").Select
+    
+    Cells(4, 1).Select
+    With ActiveSheet.PivotTables("close_order").PivotFields("Unit List  Price")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("close_order").PivotFields("Order Qty")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    With ActiveSheet.PivotTables("close_order").PivotFields("Bill To Name")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveSheet.PivotTables("close_order").AddDataField ActiveSheet.PivotTables( _
+        "close_order").PivotFields("Total G. Sales"), "Sum of Total G. Sales", xlSum
+    
+    Sheets("Sheet1").Name = MonthName(Month(RpDate), True) & " " & Day(RpDate) & " close order pivot"
+    
+    Set RCost = Sheets("regular cost list")
+    RCost.Select
+    LRRCost = RCost.Cells(Rows.Count, 1).End(xlUp).Row
+    
+    Columns("H:H").Insert Shift:=xlToRight
+    Range("H1").Value = "Helper (add when creating regular cost file)"
+    Range("H2").FormulaR1C1 = "=LEFT(RC[-2],8)&RC[-1]"
+    Range("H2").AutoFill Destination:=Range("H2:H" & LRRCost)
+    RCost.Range("F1, G1, H:H, L1").Interior.Color = 65535
+    RCost.Range("H1").Interior.Color = 15773696
+
+    RCostDSource = RCost.Name & "!R1C1:R" & LRRCost & "C39"
+    Sheets.Add(After:=RCost).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        RCostDSource).CreatePivotTable _
+        TableDestination:="Sheet1!R3C1", TableName:="regular_cost"
+    Sheets("Sheet1").Select
+    Range("A1").Value = "*Build pivot table using regilar cost list, then select the main 6 PG group, then copy the model and the cost into PG regular price final tab for each group"
+    Range("A1").Font.Bold = True
+    Range("A1").Font.Color = -16776961
+    
+    Dim PTRC As PivotTable
+    Set PTRC = ActiveSheet.PivotTables("regular_cost")
+    With ActiveSheet.PivotTables("regular_cost").PivotFields("Customer Code")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+
+    Dim PTRCItm As PivotItem
+    Dim CLabelArray()  As Variant
+
+    CLabelArray = Array(Split("CUST,DSP,DSP_STA,EDLC DSP,EDLC PLAT,PLAT,PLAT_STA,PREF,PREFERRED,PREFERRED - ENG", ","))
+
+    For Each PTRCItm In PTRC.PivotFields("Customer Code").PivotItems
+        If Not IsError(Application.Match(PTRCItm.Caption, CLabelArray, 0)) Then
+            PTRCItm.Visible = True
+        Else
+            PTRCItm.Visible = False
+        End If
+    Next PTRCItm
+
+    With PTRC.PivotFields("Model")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+
+    PTRC.AddDataField PTRC.PivotFields("Req. Price"), "Sum of Req. Price", xlSum
+    With PTRC.PivotFields("Sum of Req. Price")
+        .Caption = "Max of Req. Price"
+        .Function = xlMax
+    End With
+
+    PTRC.RowGrand = False
+    PTRC.ColumnGrand = False
+
+    Sheets("Sheet1").Name = "PG regular price pivot"
+
+    LRRCostPVT = Sheets("PG regular price pivot").Cells(Rows.Count, 1).End(xlUp).Row
+    Sheets.Add(After:=Sheets("PG regular price pivot")).Name = "PG regular price final"
+    Set RPFN = Sheets("PG regular price final")
+    
+    Sheets("PG regular price pivot").Range("A4:K" & LRRCostPVT).Copy
+    RPFN.Paste
+    
+    LRRPFN = RPFN.Cells(Rows.Count, 1).End(xlUp).Row
+    RPFN.Select
+    Range("A1:K1").Interior.Color = 65535
+    Range("B1:K1").Font.Color = -16776961
+    
+    Columns("C:C").Insert Shift:=xlToRight
+    Range("C:C").Interior.Color = 5296274
+    Range("C:C").Font.ColorIndex = xlAutomatic
+    Range("C1").FormulaR1C1 = "helper"
+    Range("C2").FormulaR1C1 = "=R1C2&RC[-2]"
+    Range("C2").AutoFill Destination:=Range("C2:C" & LRRPFN)
+    
+    Columns("F:G").Insert Shift:=xlToRight
+    Range("F:G").Interior.Color = 10079487
+    Range("F:G").Font.ColorIndex = xlAutomatic
+    Range("F1").Font.Color = -16776961
+    Range("F1").FormulaR1C1 = "DSP Final price"
+    Range("G1").FormulaR1C1 = "helper"
+    Range("F2").FormulaR1C1 = "=IFERROR(MAX(RC[-2],RC[-1]),"""")"
+    Range("G2").FormulaR1C1 = "=R1C4&RC[-6]"
+    Range("F2:G2").AutoFill Destination:=Range("F2:G" & LRRPFN)
+    
+    Columns("I:I").Insert Shift:=xlToRight
+    Range("I:I").Interior.Color = 5296274
+    Range("I:I").Font.ColorIndex = xlAutomatic
+    Range("I1").FormulaR1C1 = "helper"
+    Range("I2").FormulaR1C1 = "=LEFT(R1C8,8)&RC[-8]"
+    Range("I2").AutoFill Destination:=Range("I2:I" & LRRPFN)
+    
+    Columns("K:K").Insert Shift:=xlToRight
+    Range("K:K").Interior.Color = 5296274
+    Range("K:K").Font.ColorIndex = xlAutomatic
+    Range("K1").FormulaR1C1 = "helper"
+    Range("K2").FormulaR1C1 = "=LEFT(R1C10,8)&RC[-10]"
+    Range("K2").AutoFill Destination:=Range("K2:K" & LRRPFN)
+    
+    Columns("N:O").Insert Shift:=xlToRight
+    Range("N:O").Interior.Color = 16764057
+    Range("N:O").Font.ColorIndex = xlAutomatic
+    Range("N1").Font.Color = -16776961
+    Range("N1").FormulaR1C1 = "PLAT Final price"
+    Range("O1").FormulaR1C1 = "helper"
+    Range("N2").FormulaR1C1 = "=IFERROR(MAX(RC[-2],RC[-1]),"""")"
+    Range("O2").FormulaR1C1 = "=LEFT(R1C12,8)&RC[-14]"
+    Range("N2:O2").AutoFill Destination:=Range("N2:O" & LRRPFN)
+    
+    Columns("S:T").Insert Shift:=xlToRight
+    Range("S:T").Interior.Color = 16764159
+    Range("S:T").Font.ColorIndex = xlAutomatic
+    Range("S1").Font.Color = -16776961
+    Range("S1").FormulaR1C1 = "PREF Final price"
+    Range("T1").FormulaR1C1 = "helper"
+    Range("S2").FormulaR1C1 = "=IFERROR(MAX(RC[-3],RC[-2],RC[-1]),"""")"
+    Range("T2").FormulaR1C1 = "=LEFT(R1C16,8)&RC[-19]"
+    Range("S2:T2").AutoFill Destination:=Range("S2:T" & LRRPFN)
+    
+    Sheets.Add(After:=RPFN).Name = "for lookup"
+    Set LKUP = Sheets("for lookup")
+    LKUP.Range("A1").Value = "Price"
+    LKUP.Range("B1").Value = "Model Helper"
+    RPFN.Range("B2:C" & LRRPFN).Copy
+    LKUP.Select
+    Range("A2").Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    RPFN.Range("F2:G" & LRRPFN).Copy
+    LKUP.Range("A" & LRRPFN + 1).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    RPFN.Range("H2:I" & LRRPFN).Copy
+    LKUP.Range("A" & (LRRPFN - 1) * 2 + 2).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    RPFN.Range("J2:K" & LRRPFN).Copy
+    LKUP.Range("A" & (LRRPFN - 1) * 3 + 2).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    RPFN.Range("N2:O" & LRRPFN).Copy
+    LKUP.Range("A" & (LRRPFN - 1) * 4 + 2).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    RPFN.Range("S2:T" & LRRPFN).Copy
+    LKUP.Range("A" & (LRRPFN - 1) * 5 + 2).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    LRPLPH = Sheets("PLP historical data").Cells(Rows.Count, 1).End(xlUp).Row
+    Sheets("PLP historical data").Select
+    Columns("D:D").Insert Shift:=xlToRight
+    Range("D1").Value = "Helper"
+    Range("D2").FormulaR1C1 = "=RC[-3]&RC[-2]&RC[-1]"
+    Range("D2").AutoFill Destination:=Range("D2:D" & LRPLPH)
+    
+    LRPLP = PLPorder.Cells(Rows.Count, 1).End(xlUp).Row
+    Sheets.Add(Before:=Sheets(MonthName(Month(RpDate), True) & " " & Day(RpDate) & " close order pivot")).Name = "working file"
+    Set WF = Sheets("working file")
+    WF.Select
+    Range("A1:U1").FormulaArray = Array(Split("PLP  Submission No/Model/Bill To Code/Billto8+model helper/Ship To Code/Unit List  Price (PLP price)/Regular cost/Order Qty/Discount/Discount total/PG mapping result/PG8+MODEL helper/PLP reason code/Product/Bill to name/GBU/PLP helper/*Notes/Regular cost total/Discount % (per unit)/PLP %", "/"))
+    Range("A2").Formula = "='" & PLPorder.Name & "'!$BW2"
+    Range("B2").Formula = "='" & PLPorder.Name & "'!$E2"
+    Range("C2").Formula = "='" & PLPorder.Name & "'!$AP2"
+    Range("D2").Formula = "=LEFT(C2,8)&B2"
+    Range("E2").Formula = "='" & PLPorder.Name & "'!$AQ2"
+    Range("F2").Formula = "='" & PLPorder.Name & "'!$G2"
+
+    Range("H2").Formula = "='" & PLPorder.Name & "'!$F2"
+    Range("I2").Formula = "=G2-F2"
+    Range("J2").Formula = "=I2*H2"
+    Range("K2").Formula = "=XLOOKUP(E2,'PG Mapping List'!$C:$C,'PG Mapping List'!$A:$A,"""")"
+    Range("L2").Formula = "=LEFT(K2,8)&B2"
+    Range("M2").Formula = "=XLOOKUP(Q2,'PLP historical data'!$D:$D,'PLP historical data'!$E:$E)"
+    Range("N2").Formula = "=XLOOKUP(B2,'" & PLPorder.Name & "'!E:E,'" & PLPorder.Name & "'!AB:AB)"
+    Range("O2").Formula = "=XLOOKUP(C2,'" & PLPorder.Name & "'!AP:AP,'" & PLPorder.Name & "'!C:C)"
+    Range("P2").Formula = "=XLOOKUP(B2,Model!$A:$A,Model!$C:$C)"
+    Range("Q2").Formula = "=C2&B2&A2"
+    Range("S2").Formula = "=G2*H2"
+    Range("T2").Formula = "=I2/G2"
+    Range("U2").Formula = "=F2/G2"
+    Range("V2").Formula = "=T2+U2"
+    Range("A2:V2").AutoFill Destination:=Range("A2:V" & LRPLP)
+    
+    Range("F:G,I:J,S:S").Style = "Currency"
+    Range("T:V").Style = "Percent"
+    Range("T:V").NumberFormat = "0.00%"
+    
+    Range("G1").AutoFilter
+    Range("G2").Formula = "=MAXIFS('regular cost list'!$L:$L,'regular cost list'!$H:$H,$D2)"
+    Range("G2").AutoFill Destination:=Range("G2:G" & LRPLP)
+    ActiveSheet.Range("$A$1:$V$" & LRPLP).AutoFilter Field:=7, Criteria1:="#DIV/0!"
+    Range("G2:G" & LRPLP).SpecialCells(xlCellTypeVisible).FormulaR1C1 = "=XLOOKUP(RC[5],'for lookup'!C[-5],'for lookup'!C[-6])"
+    ActiveSheet.Range("$A$1:$V$" & LRPLP).AutoFilter Field:=7, Criteria1:="#N/A"
+    ActiveSheet.Range("$A$1:$V$" & LRPLP).AutoFilter Field:=11, Criteria1:="="
+    Range("K2:K" & LRPLP).SpecialCells(xlCellTypeVisible).Value = "CUST"
+    ActiveSheet.Range("$A$1:$V$" & LRPLP).AutoFilter Field:=7, Criteria1:="$-"
+    ActiveSheet.Range("$A$1:$V$" & LRPLP).AutoFilter Field:=11, Criteria1:="CUST"
+    Range("K2:K" & LRPLP).SpecialCells(xlCellTypeVisible).Value = "PREF"
+    ActiveSheet.ShowAllData
+    ActiveSheet.Range("$A$1:$V$404").AutoFilter Field:=7, Criteria1:="="
+    On Error Resume Next
+    Range("G2:G" & LRPLP).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+    ActiveSheet.ShowAllData
+    ActiveSheet.Range("$A$1:$V$404").AutoFilter Field:=7, Criteria1:="$-"
+    On Error Resume Next
+    Range("G2:G" & LRPLP).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+    ActiveSheet.ShowAllData
+    ActiveSheet.Range("$A$1:$V$404").AutoFilter Field:=7, Criteria1:="#N/A"
+    On Error Resume Next
+    Range("G2:G" & LRPLP).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+    ActiveSheet.ShowAllData
+
+    Range("F:G,I:J,S:S").Style = "Currency"
+    Range("T:V").Style = "Percent"
+    Range("T:V").NumberFormat = "0.00%"
+    Range("A1").Select
+    Range("K1:S1").Columns.Group
+
+    Range("A1").Select
+    Range("K1:S1").Columns.Group
+    
+    
+    
+    
+    
+    
+End Sub
+
+
+
+
+Sub PLP_Report_PivotSummary()
+'
+' PLP_Report_PivotSummary Macro
+'
+
+'
+
+    Set WF = Sheets("working file")
+    LRWF = WF.Cells(Rows.Count, 1).End(xlUp).Row
+    RpDate = Trim(Left(Sheets(3).Name, 6))
+    Set CloseOrderPivot = Sheets(Trim(Left(Sheets(3).Name, 6)) & " close order pivot")
+    
+    WFDSource = WF.Name & "!R1C1:R" & LRWF & "C21"
+    Sheets.Add(Before:=Sheets("OLAP sales amount")).Name = "Sheet1"
+
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        WFDSource).CreatePivotTable _
+        TableDestination:="Sheet1!R3C1", TableName:="ByGBU"
+    Sheets("Sheet1").Select
+    
+    Cells(3, 1).Select
+    With ActiveSheet.PivotTables("ByGBU").PivotFields("PLP reason code")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    
+    Dim ByGBU As PivotTable
+    Set ByGBU = ActiveSheet.PivotTables("ByGBU")
+    Dim PItem As PivotItem
+    Dim ReasonArray()  As Variant
+
+    ReasonArray = Array(Split("EP,LT,SO", ","))
+
+    For Each PItem In ByGBU.PivotFields("PLP reason code").PivotItems
+        If Not IsError(Application.Match(PItem.Caption, ReasonArray, 0)) Then
+            PItem.Visible = True
+        Else
+            PItem.Visible = False
+        End If
+    Next PItem
+    
+    With ActiveSheet.PivotTables("ByGBU").PivotFields("GBU")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveSheet.PivotTables("ByGBU").AddDataField ActiveSheet.PivotTables( _
+        "ByGBU").PivotFields("Discount total"), "Sum of Discount total", xlSum
+    ActiveSheet.PivotTables("ByGBU").PivotFields("Sum of Discount total").NumberFormat = "#,##0.00"
+    
+    Sheets("Sheet1").Select
+    Range("C3:E3").FormulaArray = Array(Split("Sum of Discount total,sales amount in GBU,D/C%", ","))
+    Range("C4").Formula = "=B4"
+    Range("D4").Formula = "=XLOOKUP(A4,'OLAP sales amount'!$G:$G,'OLAP sales amount'!$I:$I)"
+    Range("E4").Formula = "=C4/D4"
+    Range("C4:E4").AutoFill Destination:=Range("C4:E8")
+    Range("D8").Formula = "=SUM(D4:D7)"
+    Range("E4:E8").NumberFormat = "0.00%"
+        
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        WFDSource).CreatePivotTable _
+        TableDestination:="Sheet1!R3C7", TableName:="ByBillName"
+    Sheets("Sheet1").Select
+    
+    Cells(3, 7).Select
+    With ActiveSheet.PivotTables("ByBillName").PivotFields("PLP reason code")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    
+    Dim ByBillName As PivotTable
+    Set ByBillName = ActiveSheet.PivotTables("ByBillName")
+    
+    For Each PItem In ByBillName.PivotFields("PLP reason code").PivotItems
+        If Not IsError(Application.Match(PItem.Caption, ReasonArray, 0)) Then
+            PItem.Visible = True
+        Else
+            PItem.Visible = False
+        End If
+    Next PItem
+    
+    With ActiveSheet.PivotTables("ByBillName").PivotFields("Bill to name")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveSheet.PivotTables("ByBillName").AddDataField ActiveSheet.PivotTables( _
+        "ByBillName").PivotFields("Discount total"), "Sum of Discount total", xlSum
+    ActiveSheet.PivotTables("ByBillName").AddDataField ActiveSheet.PivotTables( _
+        "ByBillName").PivotFields("Regular cost total"), "Sum of Regular cost total", xlSum
+    ActiveSheet.PivotTables("ByBillName").PivotFields("Sum of Discount total").NumberFormat = "#,##0.00"
+    ActiveSheet.PivotTables("ByBillName").PivotFields("Sum of Regular cost total").NumberFormat = "#,##0.00"
+
+    With ActiveSheet.PivotTables("ByBillName").PivotFields("Bill to name")
+        .PivotFilters.Add2 Type:=xlTopCount, DataField:=ActiveSheet.PivotTables("ByBillName"). _
+        PivotFields("Sum of Discount total"), Value1:=15
+        .AutoSort xlDescending, "Sum of Discount total"
+    End With
+    
+    Range("J4:M4").FormulaArray = Array(Split("Discount total,G.sale,D/C%,Remark", ","))
+    Range("J5").Formula = "=H5"
+    Range("K5").Formula = "=XLOOKUP(G5,'" & CloseOrderPivot.Name & "'!$A:$A, '" & CloseOrderPivot.Name & "'!$B:$B)"
+    Range("L5").Formula = "=J5/K5"
+    Range("J5:L5").AutoFill Destination:=Range("J5:L20")
+    Range("K20").Formula = "=SUM(K5:K19)"
+    Range("L5:L20").NumberFormat = "0.00%"
+
+    Sheets("Sheet1").Name = MonthName(Month(RpDate), True) & " " & Day(RpDate) & " Summary"
+
+
+
+
+
+End Sub
+
+
+
+
+
+
