@@ -1,0 +1,291 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+
+Sub CopyMasterFile()
+
+    Dim wb_PM, wb As Workbook
+    Dim ws_allM, ws_CA, ws_Ref, ws_DW, ws_WM, ws_ST As Worksheet
+    Dim pvt As PivotTable
+    Dim pi As PivotItem
+    Dim fileName As String
+    Dim current_wk As Integer
+    
+    '// Optimize Code
+    Call OptimizeCode_Begin
+    
+    '// Set Period for Mass Modification Sheet
+    Dim ws_PMPriceM, ws_MassMod As Worksheet
+    Set ws_PMPriceM = Sheets("1 PM Pricing Master")
+    Set ws_MassMod = Sheets("Mass Modification")
+    Dim StWk, EndWk, Yr, i, z As Integer
+    Dim WkArray() As Variant
+    StWk = Trim(InputBox("Enter Planner Start Week", "Start Week", WorksheetFunction.WeekNum(Date)))
+    EndWk = Trim(InputBox("Enter Planner End Week", "End Week", WorksheetFunction.WeekNum(Date)))
+    Yr = Trim(InputBox("Enter Planner Year", "Year", Year(Date)))
+    Debug.Print "Planner Starts from week " & StWk
+    Debug.Print "Planner Ends in week " & EndWk
+    ws_PMPriceM.Range("E3").Value = StWk
+    ws_PMPriceM.Range("E4").Value = EndWk
+    ws_PMPriceM.Range("E5").Value = Yr
+    
+    z = EndWk - StWk + 1
+    Debug.Print "Total Weeks Selected: " & z
+    ReDim WkArray(1 To z)
+
+    For i = 1 To z
+        WkArray(i) = "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & StWk & "]&[" & Yr & "]"
+        StWk = StWk + 1
+    Next i
+    
+    For i = LBound(WkArray) To UBound(WkArray)
+        Debug.Print WkArray(i)
+    Next i
+    
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+
+    '// Is Existing WorkSheet
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = "All_Models" Then
+            ws.delete
+        End If
+    Next
+    
+    '// Create Working file'
+    Set wb = ThisWorkbook
+    Set ws_allM = wb.Sheets.Add(After:=wb.Worksheets(ActiveWorkbook.Worksheets.Count - 3))
+    ws_allM.Name = "All_Models"
+    
+    '// Master Price List Path'
+    fileName = Application.GetOpenFilename(Filefilter:="Excel Files (*.xlsx), *.xlsx", MultiSelect:=False, Title:="Open the Price Master")
+    
+    Set wb_PM = Workbooks.Open(fileName, ReadOnly:=True)
+    Set ws_CA = wb_PM.Sheets("CA")
+    Set ws_Ref = wb_PM.Sheets("REF")
+    Set ws_DW = wb_PM.Sheets("DW")
+    Set ws_WM = wb_PM.Sheets("WM")
+    Set ws_ST = wb_PM.Sheets("STUDIO")
+    
+    Dim GBUArray() As Variant
+    GBUArray = Array(ws_CA, ws_Ref, ws_DW, ws_WM, ws_ST)
+    
+    '// Copy all sheets to one'
+    
+    Dim GBU As Variant
+    For Each GBU In GBUArray
+        GBU.Select
+        Dim copyR, ws_lRow, allMlRow As Long
+        On Error Resume Next
+        GBU.ShowAllData
+        '// Check if any builder model'
+        Dim bd As Range
+    
+        Set bd = Range("K:K").Find(What:="Builder")
+            If bd Is Nothing Then
+                copyR = GBU.Cells(Rows.Count, "M").End(xlUp).Row
+                Else
+                copyR = Split(bd.Address, "$")(2)
+            End If
+            Debug.Print "Copy until " & copyR & " Row"
+        
+        allMlRow = ws_allM.Cells(Rows.Count, "L").End(xlUp).Row
+        Debug.Print "last row: " & allMlRow
+    
+        GBU.Range("B6:BC" & copyR).Copy
+        ws_allM.Range("A" & allMlRow + 1).PasteSpecial Paste:=xlPasteValues
+        allMlRow = ws_allM.Cells(Rows.Count, "L").End(xlUp).Row
+    Next
+    
+    wb_PM.Close
+    
+    
+    'Create button for next macro
+    ws_allM.Shapes.AddShape(msoShapeRoundedRectangle, 409.5, 3, 132.75, 24).Name = "DataCleaning"
+    ws_allM.Shapes("DataCleaning").Select
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "Data Cleaning"
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 13).ParagraphFormat.Alignment = msoAlignCenter
+    Selection.OnAction = "DataCleaningMasterFile"
+    Range("G1").Value = "2. Clean the data"
+    Range("I1").Select
+    
+    Call OptimizeCode_End
+
+End Sub
+
+
+Sub DataCleaningMasterFile()
+
+    Dim wb As Workbook
+    Dim ws_allM, ws, ws_noex, ws_MassMod As Worksheet
+    Dim pvt As PivotTable
+    Dim pi As PivotItem
+    Dim current_wk As Integer
+    Dim StDate As Date
+    
+    '// Optimize Code
+    Call OptimizeCode_Begin
+    
+    '// clean the table by deleting rows
+    Set wb = ThisWorkbook
+    Set ws_allM = Sheets("All_Models")
+    ws_allM.Select
+    ws_allM.Shapes("DataCleaning").delete
+    Range("A1:X4").ClearContents
+    Rows(1).EntireRow.delete
+    
+    Range("L5:L" & Cells(Rows.Count, "J").End(xlUp).Row).Select
+    Selection.SpecialCells(xlCellTypeBlanks).EntireRow.delete
+    
+    Dim ddd As Range
+    Dim i As Long
+    
+    On Error Resume Next
+    For i = 5 To Cells(Rows.Count, "L").End(xlUp).Row
+        Set ddd = Selection.Find(What:="Suffix")
+            ddd.EntireRow.delete
+    Next i
+    
+    Rows("4:4").AutoFilter
+    
+    'Get the Start Date of the Planner
+    Set ws_MassMod = Sheets("Mass Modification")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = True
+    StDate = ws_MassMod.Range("G12").Value
+    Debug.Print "Planner Start Date: " & StDate
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = False
+
+    Debug.Print "Planner Starts from: " & StDate
+    
+    '// reformat dates
+    ws_allM.Range("F4").AutoFilter Field:=6, Criteria1:= _
+        ">=" & CLng(CDate(StDate)), Operator:=xlOr, Criteria2:="=*" & Right(Year(StDate), 2) & "*"
+    On Error Resume Next
+
+    ws_allM.Range("A4:A" & Cells(ws_allM.Rows.Count, "L").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Value = "Check"
+    ws_allM.ShowAllData
+    
+    '// delete cancelled or EOL models
+    ws_allM.Range("D4").AutoFilter Field:=4, Criteria1:="=*cancel*", Criteria2:="=*EOL*", Operator:=xlOr
+    ws_allM.Range("A4").AutoFilter Field:=1, Criteria1:="<>Check"
+    On Error Resume Next
+    ws_allM.Range("L4:L" & Cells(ws_allM.Rows.Count, "L").Offset(1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).EntireRow.Select
+    Selection.delete
+    ws_allM.ShowAllData
+    ws_allM.Range("D4").AutoFilter Field:=4, Criteria1:="=*Deactivate*"
+    On Error Resume Next
+    ws_allM.Range("L4:L" & Cells(ws_allM.Rows.Count, "L").Offset(1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).EntireRow.Select
+    Selection.delete
+    ws_allM.ShowAllData
+    ws_allM.Range("D4").AutoFilter Field:=4, Criteria1:="=*cancel*", Criteria2:="=*EOL*", Operator:=xlOr
+    ws_allM.Range("F4").AutoFilter Field:=6, Criteria1:="=*Q1*"
+    On Error Resume Next
+    ws_allM.Range("L4:L" & Cells(ws_allM.Rows.Count, "L").Offset(1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).EntireRow.Select
+    Selection.delete
+    ws_allM.ShowAllData
+    
+    '// delete new or WIP launching in over 3 months
+    ws_allM.Range("D4").AutoFilter Field:=4, Criteria1:="=*NPI*", Criteria2:="=*WIP*", Operator:=xlOr
+    ws_allM.Range("F4").AutoFilter Field:=6, Criteria1:=">=" & (CLng(CDate(StDate)) + 90)
+    On Error Resume Next
+    ws_allM.Range("L4:L" & Cells(ws_allM.Rows.Count, "L").Offset(1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).EntireRow.Select
+    Selection.delete
+    ws_allM.ShowAllData
+    
+    '// re-assign model number
+    With Range("A5:A" & Range("L" & Rows.Count).End(xlUp).Row)
+        .Cells(1, 1).Value = 1
+        .DataSeries Rowcol:=xlColumns, Type:=xlLinear, Step:=1, Trend:=False
+    End With
+    
+    '// check if exclusive exist
+    For Each ws In Sheets
+        If ws.Name = "no_exclusive" Then
+            ws.delete
+        End If
+    Next
+    
+    '// create no exclusive model sheet
+    Set ws_noex = wb.Sheets.Add(After:=wb.Worksheets(ActiveWorkbook.Worksheets.Count - 3))
+    ws_noex.Name = "no_exclusive"
+    
+    '// filter all models without any exclusive flag
+    ws_allM.Range("A4").AutoFilter Field:=3, Criteria1:="="
+    ws_allM.Cells.Copy
+    ws_noex.Range("A1").PasteSpecial Paste:=xlPasteValues
+    ws_allM.ShowAllData
+    ws_noex.Activate
+    
+    Dim LrNoex As Long
+    LrNoex = Cells(Rows.Count, 1).End(xlUp).Row
+    Debug.Print LrNoex & " models have no exclusive flag"
+    
+    ws_allM.Activate
+    
+    '// filter possible exclusive flag
+    ws_allM.Range("A4").AutoFilter Field:=3, Criteria1:="=*INDY*", Criteria2:="=*Regional*", Operator:=xlOr
+    On Error Resume Next
+    ws_allM.Range("A5:A" & Cells(Rows.Count, 1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).EntireRow.Copy Destination:=ws_noex.Range("A" & LrNoex + 1)
+    ws_allM.ShowAllData
+    
+    '// re-assign model number
+    With ws_noex.Range("A5:A" & ws_noex.Range("L" & Rows.Count).End(xlUp).Row)
+        .Cells(1, 1).Value = 1
+        .DataSeries Rowcol:=xlColumns, Type:=xlLinear, Step:=1, Trend:=False
+    End With
+    
+    Range("A1").Select
+    Sheets("1 PM Pricing Master").Activate
+    
+    Call OptimizeCode_End
+
+End Sub
+
+
+
+
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
