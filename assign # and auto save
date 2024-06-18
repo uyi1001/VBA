@@ -1,0 +1,88 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+Sub Macro1()
+'
+' Macro1 Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+
+    Sheets("Final Mass Upload").Name = "Sheet1"
+    Sheets.Add(After:=Sheets("Sheet1")).Name = "Sheet2"
+    Sheets.Add(After:=Sheets("Sheet2")).Name = "Sheet3"
+    Sheets("Sheet1").Activate
+    
+    Range("B:C").Copy Destination:=Sheets("Sheet2").Range("A1")
+    Dim St1, St2 As Worksheet
+    Set St1 = Sheets("Sheet1")
+    Set St2 = Sheets("Sheet2")
+    St2.Activate
+    Dim Lrow As Double
+    Lrow = Cells(Rows.Count, 1).End(xlUp).Row
+    Debug.Print Lrow
+    ActiveSheet.Range("A1:B" & Lrow).RemoveDuplicates Columns:=Array(1, 2), _
+        Header:=xlYes
+    
+    Range("C1").Value = "1"
+    Range("C2").FormulaR1C1 = "=IF(RC[-1]=R[-1]C[-1],R[-1]C+1,R1C3)"
+    Range("C2").AutoFill Destination:=Range("C2:C" & Cells(Rows.Count, 1).End(xlUp).Row)
+    Range("D2").FormulaR1C1 = "=RC[-2]&""_""&RC[-1]"
+    Range("D2").AutoFill Destination:=Range("D2:D" & Cells(Rows.Count, 1).End(xlUp).Row)
+    St1.Activate
+    Range("C2").Formula = _
+        "=XLOOKUP(1,(Sheet2!A:A=B2)*(Sheet2!B:B=G2),Sheet2!D:D)"
+    Range("C2").AutoFill Destination:=Range("C2:C" & Lrow)
+    Range("C2:C" & Lrow).Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Range("G2").Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    St2.Activate
+    Cells.Select
+    Selection.Delete Shift:=xlUp
+    St1.Select
+    Range("A1").Select
+
+    'Save File
+    Dim wfName As String
+    wfName = "CP Upload " & Range("C2").Value & ".xlsx"
+    Application.DisplayAlerts = False
+    ActiveWorkbook.SaveAs Filename:=ThisWorkbook.Path & "\" & wfName, FileFormat:=xlOpenXMLWorkbook
+    
+    Call OptimizeCode_End
+    
+End Sub
+
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
