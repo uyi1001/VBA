@@ -1,0 +1,159 @@
+' For old version of excel, create helper and use vlookup
+
+
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
+
+
+Sub CopyFromTp()
+'
+' CopyFromTp Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    Dim wb_Temp, wb_CP As Workbook
+    Dim Tws_1, Tws_2, Cws_1, Cws_2 As Worksheet
+    Set wb_Temp = Workbooks("TEMPLATE - CP Upload.xlsx")
+    Set wb_CP = Workbooks("Macro CP Upload Shortlist.xlsm")
+    Set Tws_1 = wb_Temp.Sheets("Sheet1")
+    Set Tws_2 = wb_Temp.Sheets("Sheet2")
+    Set Cws_1 = wb_CP.Sheets("Sheet1")
+    Set Cws_2 = wb_CP.Sheets("Sheet2")
+
+    'Copy from Template
+    Tws_2.Activate
+    Range("H1:H" & Cells(Rows.Count, "H").End(xlUp).Row).Copy
+    Cws_1.Activate
+    Dim StartRow As Long
+    StartRow = Cells(Rows.Count, "A").End(xlUp).Row + 1
+    Range("A" & StartRow).PasteSpecial xlPasteValues
+    Tws_2.Activate
+    Range("I1:I" & Cells(Rows.Count, "H").End(xlUp).Row).Copy
+    Cws_1.Activate
+    Range("D" & StartRow).PasteSpecial xlPasteValues
+    Tws_2.Activate
+    Range("P1:P" & Cells(Rows.Count, "H").End(xlUp).Row).Copy
+    Cws_1.Activate
+    Range("E" & StartRow).PasteSpecial xlPasteValues
+    Tws_2.Activate
+    Range("M1:M" & Cells(Rows.Count, "H").End(xlUp).Row).Copy
+    Cws_1.Activate
+    Range("G" & StartRow).PasteSpecial xlPasteValues
+    Tws_2.Activate
+    Range("K1:K" & Cells(Rows.Count, "H").End(xlUp).Row).Copy
+    Cws_1.Activate
+    Range("H" & StartRow).PasteSpecial xlPasteValues
+
+    'Filter the lines
+    ActiveSheet.Range("A1:K" & Cells(Rows.Count, "A").End(xlUp).Row).AutoFilter Field:=4, Criteria1:="<>*Model*" _
+        , Operator:=xlAnd
+
+    'Delete rows hidden
+    Dim j As Long
+    For j = Cells(Rows.Count, "A").End(xlUp).Row To 2 Step -1
+        If Cells(j, "A").EntireRow.Hidden Then
+            Cells(j, "A").EntireRow.Delete
+        End If
+    Next
+    
+    'Lookup the information
+    Cws_1.ShowAllData
+    Range("B" & StartRow).Formula2R1C1 = _
+        "=XLOOKUP(1,('[TEMPLATE - CP Upload.xlsx]Sheet1'!C1=RC1)*('[TEMPLATE - CP Upload.xlsx]Sheet1'!C4=IFERROR(LEFT(RC4, SEARCH( ""."", RC4)-1),RC4))*('[TEMPLATE - CP Upload.xlsx]Sheet1'!C7=RC7),'[TEMPLATE - CP Upload.xlsx]Sheet1'!C)"
+    Range("B" & StartRow).Copy Destination:=Range("C" & StartRow)
+    Range("B" & StartRow).Copy Destination:=Range("J" & StartRow)
+    Range("K" & StartRow).Value = "Short List Auto Record"
+    Dim LastRow As Long
+    LastRow = Cells(Rows.Count, "A").End(xlUp).Row
+    Range("B" & StartRow & ":C" & StartRow).AutoFill Destination:=Range("B" & StartRow & ":C" & LastRow), Type:=xlFillDefault
+    Range("J" & StartRow & ":K" & StartRow).AutoFill Destination:=Range("J" & StartRow & ":K" & LastRow), Type:=xlFillDefault
+
+    'Set the formula to fix
+    Cells.Copy
+    Cells.PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    'Re-assign Debit #
+    Range("G" & StartRow).FormulaR1C1 = _
+        "=IFERROR(LEFT(RC[-4],SEARCH(""_"",RC[-4])-1),RC[-4])&""_Short""&TEXT(TODAY(),""mmdd"")"
+    Range("G" & StartRow).AutoFill Destination:=Range("G" & StartRow & ":G" & LastRow), Type:=xlFillDefault
+    Range("G" & StartRow & ":G" & LastRow).Copy
+    Range("C" & StartRow).PasteSpecial xlPasteValues
+    Range("G" & StartRow).PasteSpecial xlPasteValues
+    
+    'Replace :::mark in header remark
+    Columns("J:J").Replace What:=":::*", Replacement:="", LookAt:=xlPart, _
+        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
+        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
+    
+    wb_Temp.Close
+    wb_CP.Save
+    wb_CP.Close
+    
+    Call OptimizeCode_End
+End Sub
+
+Sub SaveXlsx()
+'
+' SaveXlsx Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+
+    Dim wb_CP, wb_xlsx As Workbook
+
+    'Save File
+    Dim wfName As String
+    wfName = "CP Upload Shortlist Submission " & Format(Date, "mmddyy") & ".xlsx"
+    Application.DisplayAlerts = False
+    ActiveWorkbook.SaveAs Filename:=ThisWorkbook.Path & "\" & wfName, FileFormat:=xlOpenXMLWorkbook
+    Set wb_xlsx = ActiveWorkbook
+    
+    Workbooks.Open Filename:=ThisWorkbook.Path & "\Macro CP Upload Shortlist.xlsm"
+    Set wb_CP = Workbooks("Macro CP Upload Shortlist.xlsm")
+    wb_CP.Activate
+    Sheets("Sheet1").Activate
+    Range("A2:A" & Cells(Rows.Count, "A").End(xlUp).Row).EntireRow.Delete
+    wb_CP.Save
+    wb_CP.Close
+    wb_xlsx.Close
+    
+    Call OptimizeCode_End
+    
+End Sub
+
+
+
