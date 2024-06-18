@@ -1,0 +1,72 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+
+Sub ListSelect()
+'
+' ListSelect Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    Dim ModiList As Worksheet
+    Set ModiList = Sheets("Modification List")
+    Dim LRML As Integer
+    LRML = ModiList.Cells(Rows.Count, 1).End(xlUp).Row
+    
+    Dim rng As Range
+    Dim MLArray() As Variant
+    Dim i As Long
+    
+    Set rng = ModiList.Range("A1:A" & LRML)
+    ReDim MLArray(1 To LRML)
+
+    For i = 1 To LRML
+        MLArray(i) = "[Product].[Model].&[" & rng.Cells(i).Value & "]"
+    Next i
+    
+
+    For i = LBound(MLArray) To UBound(MLArray)
+        Debug.Print MLArray(i)
+    Next i
+    
+    ActiveSheet.PivotTables("PivotTable1").PivotFields("[Product].[Model].[Model]") _
+        .ClearAllFilters
+    ActiveSheet.PivotTables("PivotTable1").PivotFields("[Product].[Model].[Model]") _
+        .VisibleItemsList = MLArray
+    
+    
+    Call OptimizeCode_End
+    
+End Sub
+
+
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
