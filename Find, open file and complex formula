@@ -1,0 +1,98 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
+Sub AMCAM_DirectPO()
+'
+' AMCAM_DirectPO Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+
+    Dim wb_amcam, wb_EDLC As Workbook, ws_org, ws_order, ws_PLP As Worksheet
+    Set wb_amcam = ThisWorkbook
+    Set ws_org = Sheets("Paste")
+    Set ws_order = Sheets("order")
+    Set ws_PLP = Sheets("PLP")
+    Dim LstRow, LstRowOg, LstRowNw As Double
+    LstRow = ws_order.Cells(Rows.Count, "A").End(xlUp).Row
+    LstRowOg = ws_org.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    ws_org.Activate
+    Dim fnd As Range
+    Set fnd = Rows(1).Find(What:="CUSTOMER_PO_NO")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("H" & LstRow + 1).PasteSpecial Paste:=xlValue
+    Set fnd = Rows(1).Find(What:="model")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("C" & LstRow + 1).PasteSpecial Paste:=xlValue
+    Set fnd = Rows(1).Find(What:="order_qty")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("F" & LstRow + 1).PasteSpecial Paste:=xlValue
+    Set fnd = Rows(1).Find(What:="order_no")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("D" & LstRow + 1).PasteSpecial Paste:=xlValue
+    Set fnd = Rows(1).Find(What:="line_no")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("E" & LstRow + 1).PasteSpecial Paste:=xlValue
+    Set fnd = Rows(1).Find(What:="eta")
+    Range(Split(fnd.Address, "$")(1) & "2:" & Split(fnd.Address, "$")(1) & LstRowOg).Copy
+    ws_order.Range("J" & LstRow + 1).PasteSpecial Paste:=xlValue
+    ws_order.Activate
+    LstRowNw = Cells(Rows.Count, "C").End(xlUp).Row
+    Range("A" & LstRow & ":B" & LstRow).AutoFill Destination:=Range("A" & LstRow & ":B" & LstRowNw)
+    Range("G" & LstRow).AutoFill Destination:=Range("G" & LstRow & ":G" & LstRowNw)
+    Range("L" & LstRow).AutoFill Destination:=Range("L" & LstRow & ":L" & LstRowNw)
+    
+    Dim fileName As String
+    fileName = Application.GetOpenFilename(Filefilter:="Excel Files (*.xlsx), *.xlsx", MultiSelect:=False, Title:="Open the Price Master")
+    Set wb_EDLC = Workbooks.Open(fileName, ReadOnly:=True)
+    wb_amcam.Activate
+    ws_order.Activate
+    Range("K" & LstRow + 1).Formula = "=XLOOKUP(@C:C, '[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!C:C, '[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!N:N, ""not find"", 0)"
+    Range("K" & LstRow + 1).AutoFill Destination:=Range("K" & LstRow + 1 & ":K" & LstRowNw)
+    Range("K" & LstRow + 1 & ":K" & LstRowNw).Copy
+    Range("K" & LstRow + 1 & ":K" & LstRowNw).PasteSpecial Paste:=xlPasteValues
+    Range("N" & LstRow + 1).Formula2R1C1 = _
+        "=INDEX('[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!C1:C119,MATCH(@C3,'[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!C3,0),MATCH(TRUE, IF('[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!R5=""EDLC" & Chr(10) & "(Pull In)"",IF('[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!R4+1>=@C10,IF('[" & wb_EDLC.Name & "]" & wb_EDLC.Sheets(1).Name & "'!R3<=@C10, TRUE))),0))"
+    Range("N" & LstRow + 1).AutoFill Destination:=Range("N" & LstRow + 1 & ":N" & LstRowNw)
+    Range("N" & LstRow + 1 & ":N" & LstRowNw).Copy
+    Range("N" & LstRow + 1 & ":N" & LstRowNw).PasteSpecial Paste:=xlPasteValues
+    Range("M" & LstRow + 1).Formula = "=IF(@N:N<>0, @N:N*(1-@L:L), @K:K*(1-@L:L))"
+    Range("M" & LstRow + 1).AutoFill Destination:=Range("M" & LstRow + 1 & ":M" & LstRowNw)
+    
+    wb_EDLC.Close
+
+    Call OptimizeCode_End
+
+End Sub
+
+
