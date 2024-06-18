@@ -1,0 +1,505 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+
+Sub HA_SPMS_monitoring()
+
+Dim wb, wb_macro As Workbook
+Dim ws_pivot, ws_SPMS_fact, ws_promoPlanner, wb_macro_ws1, wb_macro_ws2 As Worksheet
+Dim pvt As PivotTable
+Dim pi As PivotItem
+Dim fileName, BU As String
+Dim current_wk As Integer
+
+'// Optimize Code
+Call OptimizeCode_Begin
+
+'// Is Existing WorkSheet
+Dim ws As Worksheet
+For Each ws In Sheets
+    If ws.Name = "Working-1" Or ws.Name = "Working-2" Then
+        ws.Delete
+    End If
+Next
+
+'// Create Working file'
+Set wb_macro = ThisWorkbook
+
+Set wb_macro_ws1 = wb_macro.Sheets.Add(After:=wb_macro.Worksheets(ActiveWorkbook.Worksheets.Count))
+wb_macro_ws1.Name = "Working-1"
+
+Set wb_macro_ws2 = wb_macro.Sheets.Add(After:=wb_macro.Worksheets(ActiveWorkbook.Worksheets.Count))
+wb_macro_ws2.Name = "Working-2"
+
+'// SPMS monitoring tool file Path'
+fileName = Application.GetOpenFilename(Filefilter:="Excel Files (*.xlsx), *.xlsx", MultiSelect:=False, Title:="Choose a SPMS monitoring tool")
+
+Set wb = Workbooks.Open(fileName, ReadOnly:=True)
+Set ws_pivot = wb.Sheets("Pivot ")
+Set ws_SPMS_fact = wb.Sheets("SPMS vPromotion_factPricing")
+Set ws_promoPlanner = wb.Sheets("Promo Planner")
+Set pvt = ws_pivot.PivotTables("PivotTable1")
+
+'// CalculateRunTime_Minutes
+Dim StartTime As Double
+Dim MinutesElapsed As String
+
+'Remember time when macro starts
+StartTime = Timer
+
+'// Refresh Sheet SPMS_FACT'
+ws_SPMS_fact.Select
+ws_SPMS_fact.Range("A2").Select
+ActiveWorkbook.RefreshAll
+Application.CalculateUntilAsyncQueriesDone
+WaitingTime (0.5)
+Debug.Print "SPMS_FACT has been refreshed"
+
+'// Refresh Pivot Table of Sheet Promo Planner and Pivot'
+ws_promoPlanner.PivotTables(1).RefreshTable
+ws_pivot.PivotTables(1).RefreshTable
+WaitingTime (0.5)
+Debug.Print "Pivot and Promo Planner have been refreshed"
+
+Dim weekDayIndex As Integer
+Dim inputDate, startDate As Date
+
+current_wk = WorksheetFunction.WeekNum(Now, 1) '1 means week begins on Sunday'
+Debug.Print "Current week: " & current_wk
+
+inputDate = DateSerial(year(Now), Month(Now), Day(Now))
+Debug.Print "Today: " & inputDate
+
+Dim wb_macro_w1_lRow As Long
+Dim wb_macro_w2_lRow As Long
+
+'// 1. Pivot
+On Error Resume Next
+With pvt
+    'HA'
+    With .PivotFields("Catagory_GERP")
+         .ClearAllFilters
+        .PivotItems("Cooking").Visible = True
+        .PivotItems("Dishwasher").Visible = True
+        .PivotItems("REF").Visible = True
+        .PivotItems("VCC").Visible = True
+        .PivotItems("W/M").Visible = True
+        .PivotItems("AV").Visible = False
+        .PivotItems("LTV").Visible = False
+     End With
+     
+    With .PivotFields("KeyCustomer") 'Select all Customer'
+        For Each pi In .PivotItems
+            pi.Visible = True
+        Next pi
+    End With
+         
+    weekDayIndex = Weekday(inputDate, vbThursday)
+    startDate = DateAdd("d", 1 - weekDayIndex, inputDate)
+    
+    If (weekDayIndex < 4) Then
+        current_wk = current_wk + 1
+        Debug.Print "New HA Current Week (from Thur): " & current_wk
+    End If
+    
+    startDate = DateAdd("ww", 1, startDate) 'Add a week = looking for next start date'
+    Debug.Print "HA Start Date (from Thur): " & startDate
+    
+    '// 2. View next two weeks (exclude current week)
+    With .PivotFields("WeekNumber")
+        .PivotItems(current_wk + 1).Visible = True
+        .PivotItems(current_wk + 2).Visible = True
+        For Each pi In .PivotItems
+            If Not (pi = current_wk + 1 Or pi = current_wk + 2) Then pi.Visible = False
+        Next pi
+    End With
+    
+    '// 3. Filter by (blank)'
+    With .PivotFields("Promotion_Status_Code")
+        .PivotItems("(blank)").Visible = True
+       For Each pi In .PivotItems
+            If Not (pi = "(blank)") Then pi.Visible = False
+        Next pi
+    End With
+ End With '----- End with pivot'
+ 
+    '//  4. Count unregistered promotions'
+    Dim RowCnt As Integer
+    RowCnt = pvt.DataBodyRange.Rows.Count 'Number of blank models'
+    
+    If (RowCnt > 0) Then
+        
+        '// 5. Clear Working worksheet'
+        wb_macro_ws1.Cells.ClearContents
+        
+        '// 6. Copy unregistered promotions to working worksheet
+        pvt.TableRange1.Copy Destination:=wb_macro_ws1.Range("A1")
+        
+        '// 7. Filter if SOA Per Unit is greater than zero
+        wb_macro_ws1.Range("A1").AutoFilter Field:=6, Criteria1:="<=0", Criteria2:="(blank)", Operator:=xlOr
+        
+        '// 8. Delete Negative SOA Per Unit data
+        Dim rng_zero As Range
+        Set rng_zero = wb_macro_ws1.Range("A1").CurrentRegion
+        rng_zero.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+        wb_macro_ws1.Range("A1").AutoFilter.ShowAllData
+        
+         '// 9. Find last row in the first working worksheet
+        With wb_macro_ws1
+            wb_macro_w1_lRow = .Cells(Rows.Count, "A").End(xlUp).Row
+        End With
+    
+        
+        With wb_macro_ws2
+            '// 10. Copy KA and Week Number
+            wb_macro_ws1.Range("A2:B" & wb_macro_w1_lRow).Copy _
+            Destination:=.Range("A1")
+            
+            '// 11. Find last row in the second working worksheet'
+            wb_macro_w2_lRow = .Cells(Rows.Count, "A").End(xlUp).Row
+        End With '--- wb_macro.Sheets("Working-2")
+    
+        '// 12. Delete Grand Total'
+        wb_macro_ws2.Range("A" & wb_macro_w2_lRow).EntireRow.Delete
+
+        '// 13. Remove Duplicate'
+        wb_macro_ws2.Range("A:B").RemoveDuplicates Columns:=Array(1, 2) 'KA, WeekNum'
+
+        '// 14. Count Unique Rows
+        Dim allCount As Integer
+        allCount = wb_macro_ws2.Cells(wb_macro_ws2.Rows.Count, "A").End(xlUp).Row
+        
+        '//15. Change Column Position (Week, KA, Category)
+        '//15.1 Add Header
+        wb_macro_ws2.Rows(1).Insert
+        wb_macro_ws2.Range("A1:B1").Value = Array("Key Account", "Week")
+        '//15.2 Reorder Columns
+        Call Reorder_Columns(wb_macro_ws2)
+
+
+    '// 20. Find Approved/Requested Promotions'
+    If (allCount > 0) Then
+    With pvt
+         .PivotFields("Promotion_Status_Code").ClearAllFilters
+         
+         With .PivotFields("Promotion_Status_Code") 'Filter by Approved/Requested'
+                    .PivotItems("APPROVED").Visible = True
+                    .PivotItems("REQUESTED").Visible = True
+                    .PivotItems("DRAFT").Visible = False
+                    .PivotItems("(blank)").Visible = False
+        End With
+        Dim start_i As Integer
+        Dim validPromotionNum As Integer
+        start_i = 2
+         Do While start_i < allCount + 2
+              
+            With .PivotFields("KeyCustomer")
+            .ClearAllFilters
+            .PivotFilters.Add2 xlCaptionEquals, , wb_macro_ws2.Cells(start_i, "B")
+            End With
+                
+            With .PivotFields("WeekNumber")
+            .ClearAllFilters
+            .PivotFilters.Add2 xlCaptionEquals, , wb_macro_ws2.Cells(start_i, "A")
+            End With
+    
+            With .PivotFields("Promotion_Name")
+            .PivotFilters.Add2 xlCaptionDoesNotContain, , "spiff"
+            End With
+                
+            validPromotionNum = pvt.DataBodyRange.Count - 1 'Remove Grand Total'
+            If (validPromotionNum > 0) Then
+                Debug.Print "Deleted: " & wb_macro_ws2.Range("A" & start_i) & " " & wb_macro_ws2.Range("B" & start_i)
+                wb_macro_ws2.Range("A" & start_i).EntireRow.Delete
+                start_i = start_i - 1
+                allCount = allCount - 1
+            End If
+       
+        start_i = start_i + 1
+        Loop
+        
+        WaitingTime (0.5)
+  
+        End With '---End pvt
+        End If '-- End unique rows count
+
+
+        '// 24. Order by Weeknum
+        With wb_macro_ws2.Sort
+             .SortFields.Add key:=Range("A1"), Order:=xlAscending
+             .SetRange Range("A1:B" & allCount + 1)
+             .Header = xlYes
+             .Apply
+        End With
+        
+        '// 25. Vloopup sales name and email
+        With wb_macro_ws2
+            .Cells(2, "C") = "=VLOOKUP(B2,HA!A:C,2,0)"
+            .Cells(2, "D") = "=VLOOKUP(B2,HA!A:C,3,0)"
+            .Range("C2:D" & allCount + 1).FillDown '// 25.1 AutoFill
+            
+            '// 25.2 Copy Values Only'
+            .Columns("C").Copy
+            .Columns("C").PasteSpecial xlPasteValues
+            .Columns("D").Copy
+            .Columns("D").PasteSpecial xlPasteValues
+        End With
+
+'// 26. Merge
+With wb_macro_ws2
+    
+    Dim countFirstWeek, countSecondWeek As Integer
+    
+    countFirstWeek = WorksheetFunction.CountIf(.Range("A1:B" & allCount + 1), current_wk + 1)
+    countSecondWeek = WorksheetFunction.CountIf(.Range("A1:B" & allCount + 1), current_wk + 2)
+    
+    '// 26.1 Merge: current week + 1
+    With .Range("A2:A" & countFirstWeek + 1)
+        .Merge
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
+    
+    '// 26.2 Merge: current week + 2
+    With .Range("A" & countFirstWeek + 2 & ":A" & countFirstWeek + countSecondWeek + 1)
+        .Merge
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
+    
+    .Cells(1, "C") = "Sales"
+    
+    '// 26.3 Styling
+    .Columns("A:C").AutoFit
+    .Range("A:C").Font.Bold = False
+    .Range("A1:C1").Font.Bold = True
+    .Range("A:A").Font.Color = vbBlack
+    .Range("A1:C1").HorizontalAlignment = xlCenter
+    .Range("A1:C1").VerticalAlignment = xlCenter
+    
+    '// 26.4 Highlight Urgent Promotions
+    With .Range("A2:C" & countFirstWeek + 1)
+        .Style = "Bad"
+    End With
+    
+     '// 26.5 Add (urgent)
+    .Cells(2, "A") = .Cells(2, "A").Value & " (urgent)"
+    .Cells(2, "A").WrapText = True
+    .Columns("A").ColumnWidth = 8.5
+    
+    Call SetRangeBorder(.Range("A1:C" & allCount + 1))
+   
+End With '--- End Merge
+       
+End If '---- End Row Count'
+
+    
+'//27. Email Sending'
+Call SendEmailOut(allCount + 1, wb_macro)
+
+Call OptimizeCode_End
+
+'// Determine how many seconds code took to run
+  MinutesElapsed = Format((Timer - StartTime) / 86400, "hh:mm:ss")
+
+'// Notify user in seconds
+  MsgBox "Total Processing Time:  " & MinutesElapsed & " minutes", vbInformation
+
+Debug.Print "----- Done -----"
+
+End Sub
+
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
+
+Sub WaitingTime(Finish As Long)
+
+Dim NowTick As Long
+Dim EndTick As Long
+Dim GetTickCount As Long
+
+EndTick = GetTickCount + (Finish * 1000)
+ 
+Do
+    NowTick = GetTickCount
+    DoEvents
+
+Loop Until NowTick >= EndTick
+
+End Sub
+
+Function SendEmailOut(ByVal allCount As Integer, ByVal wb As Workbook) As String
+
+Const oMailitem = 0
+
+Dim oApp As Outlook.Application
+Dim oMail As MailItem
+Dim signature, salesEmail, strBody  As String
+Dim rng, emailBody As Range
+Dim e_body As Variant
+
+Set oApp = New Outlook.Application
+Set oMail = oApp.CreateItem(oMailitem)
+
+'// 1. Sales Email
+'// 1.1 Remove Duplicated Sales Emails
+wb.Sheets("Working-2").Range("D:D").RemoveDuplicates Columns:=1
+'// 1.2 Count Sales Emails
+Dim countEmails As Integer
+countEmails = wb.Sheets("Working-2").Cells(wb.Sheets("Working-2").Rows.Count, "D").End(xlUp).Row
+'// 1.3 Add Sales Emails
+Dim startRow As Integer
+For startRow = 2 To countEmails
+    salesEmail = salesEmail & wb.Sheets("Working-2").Cells(startRow, "D") & ";"
+Next startRow
+salesEmail = Left(salesEmail, Len(salesEmail) - 1)
+
+'// 2. Email Body - Intro
+Dim emailLastRow As Integer
+emailLastRow = wb.Sheets("Template").Cells(wb.Sheets("Template").Rows.Count, "B").End(xlUp).Row
+Set emailBody = wb.Sheets("Template").Range("B6:B" & emailLastRow)
+For Each e_body In emailBody
+    strBody = strBody & e_body & "<br/>"
+Next e_body
+
+'// 3. Table
+Set rng = wb.Sheets("Working-2").Range("A1:C" & allCount).SpecialCells(xlCellTypeVisible)
+
+With oMail
+    .Display
+    signature = "<p>Best Regards,</p>" & .HTMLBody
+    .Close 0
+    .To = salesEmail
+    .CC = wb.Sheets("Template").Cells(3, "B")
+    .Subject = wb.Sheets("Template").Cells(1, "B")
+    .BodyFormat = olFormatHTML
+    .HTMLBody = strBody & RangetoHTML(rng) & signature
+    .Display
+'    .Send
+End With
+
+Set rng = Nothing
+Set oApp = Nothing
+Set oMail = Nothing
+Set emailBody = Nothing
+
+End Function
+
+Sub Reorder_Columns(ws As Worksheet)
+
+Dim ColumnOrder As Variant, ndx As Integer
+Dim Found As Range, counter As Integer
+
+ColumnOrder = Array("Week", "Key Account", "Category")
+counter = 1
+
+Application.ScreenUpdating = False
+   
+With ws
+For ndx = LBound(ColumnOrder) To UBound(ColumnOrder)
+    Set Found = .Rows("1:1").Find(ColumnOrder(ndx), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, SearchDirection:=xlNext, MatchCase:=False)
+    If Not Found Is Nothing Then
+        If Found.Column <> counter Then
+            Found.EntireColumn.Cut
+            .Columns(counter).Insert Shift:=xlToRight
+            Application.CutCopyMode = False
+        End If
+    counter = counter + 1
+    End If
+Next ndx
+End With
+
+End Sub
+
+Function RangetoHTML(ByVal rng As Range)
+
+    Dim fso As Object
+    Dim ts As Object
+    Dim TempFile As String
+    Dim TempWB As Workbook
+
+    TempFile = Environ$("temp") & "\" & Format(Now, "dd-mm-yy h-mm-ss") & ".htm"
+
+    'Copy the range and create a new workbook to past the data in
+    rng.Copy
+    Set TempWB = Workbooks.Add(1)
+    With TempWB.Sheets(1)
+        .Cells(1).PasteSpecial Paste:=8
+        .Cells(1).PasteSpecial xlPasteValues, , False, False
+        .Cells(1).PasteSpecial xlPasteFormats, , False, False
+        .Cells(1).Select
+        Application.CutCopyMode = False
+        On Error Resume Next
+        .DrawingObjects.Visible = True
+        .DrawingObjects.Delete
+        On Error GoTo 0
+    End With
+
+    'Publish the sheet to a htm file
+    With TempWB.PublishObjects.Add( _
+         SourceType:=xlSourceRange, _
+         fileName:=TempFile, _
+         Sheet:=TempWB.Sheets(1).Name, _
+         Source:=TempWB.Sheets(1).UsedRange.Address, _
+         HtmlType:=xlHtmlStatic)
+        .Publish (True)
+    End With
+
+    'Read all data from the htm file into RangetoHTML
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set ts = fso.GetFile(TempFile).OpenAsTextStream(1, -2)
+    RangetoHTML = ts.ReadAll
+    ts.Close
+    RangetoHTML = Replace(RangetoHTML, "align=center x:publishsource=", _
+                          "align=left x:publishsource=")
+
+    RangetoHTML = Replace(RangetoHTML, "table border=0 cellpadding=0 cellspacing=0", _
+                          "table border=0 cellpadding=1 cellspacing=1")
+    'Close TempWB
+    TempWB.Close savechanges:=False
+
+    'Delete the htm file we used in this function
+    Kill TempFile
+
+    Set ts = Nothing
+    Set fso = Nothing
+    Set TempWB = Nothing
+End Function
+
+Sub SetRangeBorder(poRng As Range)
+    If Not poRng Is Nothing Then
+        poRng.Borders(xlDiagonalDown).LineStyle = xlNone
+        poRng.Borders(xlDiagonalUp).LineStyle = xlNone
+        poRng.Borders(xlEdgeLeft).LineStyle = xlContinuous
+        poRng.Borders(xlEdgeTop).LineStyle = xlContinuous
+        poRng.Borders(xlEdgeBottom).LineStyle = xlContinuous
+        poRng.Borders(xlEdgeRight).LineStyle = xlContinuous
+        poRng.Borders(xlInsideVertical).LineStyle = xlContinuous
+        poRng.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+    End If
+End Sub
