@@ -1,0 +1,1767 @@
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+Public SelKeyCust
+Sub PeriodSet()
+'
+' PeriodSet Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    Dim ws_PMPriceM, ws_IndKey, ws_MarginTire, ws_EDLCUp, ws_Channel, ws_MassMod, ws_edit, ws_atPG As Worksheet
+    Set ws_PMPriceM = Sheets("1 PM Pricing Master")
+    Set ws_IndKey = Sheets("2 Individual Key")
+    Set ws_MarginTire = Sheets("3 Margin Tire Setup")
+    Set ws_EDLCUp = Sheets("4 EDLC Upload")
+    Set ws_Channel = Sheets("5 Channel")
+    Set ws_MassMod = Sheets("Mass Modification")
+    Set ws_edit = Sheets("ForEdit")
+    Set ws_atPG = Sheets("At PG")
+    
+    'Set the valid weeks
+    Dim StWk, EndWk, Yr, i, z As Integer
+    Dim WkArray() As Variant
+    StWk = Trim(InputBox("Enter Planner Start Week", "Start Week", WorksheetFunction.WeekNum(Date)))
+    EndWk = Trim(InputBox("Enter Planner End Week", "End Week", WorksheetFunction.WeekNum(Date)))
+    Yr = Trim(InputBox("Enter Planner Year", "Year", Year(Date)))
+    Debug.Print "Planner Starts from week " & StWk
+    Debug.Print "Planner Ends in week " & EndWk
+    z = EndWk - StWk + 1
+    Debug.Print "Total Weeks Selected: " & z
+    ReDim WkArray(1 To z)
+
+    For i = 1 To z
+        WkArray(i) = "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & StWk & "]&[" & Yr & "]"
+        StWk = StWk + 1
+    Next i
+    
+    For i = LBound(WkArray) To UBound(WkArray)
+        Debug.Print WkArray(i)
+    Next i
+
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+   
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+
+    Call OptimizeCode_End
+    
+End Sub
+
+Sub KeyCustSet()
+'
+' KeyCustSet Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    Dim ws_PMPriceM, ws_IndKey, ws_MarginTire, ws_EDLCUp, ws_Channel, ws_MassMod, ws_edit, ws_allM, ws_noex, ws_atPG As Worksheet
+    Set ws_PMPriceM = Sheets("1 PM Pricing Master")
+    Set ws_IndKey = Sheets("2 Individual Key")
+    Set ws_MarginTire = Sheets("3 Margin Tire Setup")
+    Set ws_EDLCUp = Sheets("4 EDLC Upload")
+    Set ws_Channel = Sheets("5 Channel")
+    Set ws_MassMod = Sheets("Mass Modification")
+    Set ws_edit = Sheets("ForEdit")
+    Set ws_allM = Sheets("All_Models")
+    Set ws_noex = Sheets("no_exclusive")
+    Set ws_atPG = Sheets("At PG")
+
+    'Userform for Key Customer Selection
+    Dim KCustList As New UserForm1
+    
+    KCustList.Show
+    
+    Debug.Print "Key Customer Selected: " & SelKeyCust
+    Dim SelArr() As Variant
+    
+    If SelKeyCust = "BMTC" Then
+        ReDim SelArr(1 To 2)
+        SelArr(1) = "[Account].[Hierarchy].[Account Name].&[Tanguay]"
+        SelArr(2) = "[Account].[Hierarchy].[Account Name].&[Brault & Martineau]"
+    Else
+        Dim dict As New Scripting.Dictionary
+        dict.Add Key:="AM CAM", Item:="[AM-CAM]"
+        dict.Add Key:="CAS", Item:="[EIPG]"
+        dict.Add Key:="Trail", Item:="[Trail]"
+        dict.Add Key:="English Indy", Item:="[Indy English]"
+        dict.Add Key:="French Indy", Item:="[Indy French]"
+        dict.Add Key:="HDW", Item:="[HOME HARDWARE]"
+        ReDim SelArr(1)
+        SelArr(1) = "[Account].[Hierarchy].[Account Name].&" & dict(SelKeyCust)
+    End If
+    
+    ws_MassMod.Range("H1").Value = SelKeyCust
+
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+    
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+    
+    
+    '// Validation preparation
+    Dim wb As Workbook
+    Dim ws_Valid As Worksheet
+    
+    '// Is Existing WorkSheet
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = "Validation" Then
+            ws.delete
+        End If
+    Next
+    
+    '// Create Working file'
+    Set wb = ThisWorkbook
+    Set ws_Valid = wb.Sheets.Add(After:=wb.Worksheets(6))
+    ws_Valid.Name = "Validation"
+    
+    '//Copy paste from Sheet 1-3
+    Dim LR_PMPriceM, LR_IndKey, LR_MarginTire As Long
+    LR_PMPriceM = ws_PMPriceM.Cells(Rows.Count, 4).End(xlUp).Row
+    LR_IndKey = ws_IndKey.Cells(Rows.Count, 4).End(xlUp).Row
+    LR_MarginTire = ws_MarginTire.Cells(Rows.Count, 4).End(xlUp).Row
+    
+    ws_PMPriceM.Activate
+    Range(ws_PMPriceM.Cells(11, 4).Address & ":" & ws_PMPriceM.Cells(LR_PMPriceM, 4).Address).Copy
+    ws_Valid.Range("A" & 3).PasteSpecial Paste:=xlPasteValues
+    ws_IndKey.Activate
+    Range(ws_IndKey.Cells(11, 4).Address & ":" & ws_IndKey.Cells(LR_IndKey, 4).Address).Copy
+    ws_Valid.Range("C" & 3).PasteSpecial Paste:=xlPasteValues
+    ws_MarginTire.Activate
+    Range(ws_MarginTire.Cells(11, 4).Address & ":" & ws_MarginTire.Cells(LR_MarginTire, 4).Address).Copy
+    ws_Valid.Range("E" & 3).PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    '// Cross Validation
+    Dim LR_noex, LR_allM As Long
+    LR_noex = ws_noex.Cells(Rows.Count, 1).End(xlUp).Row
+    LR_allM = ws_allM.Cells(Rows.Count, 1).End(xlUp).Row
+    
+    'Copy all Models from no exclusive
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    
+    Dim dictCol As New Scripting.Dictionary
+    dictCol.Add Key:="AM CAM", Item:="AG"
+    dictCol.Add Key:="BMTC", Item:="AE"
+    dictCol.Add Key:="CAS", Item:="BB"
+    dictCol.Add Key:="Trail", Item:="AI"
+    dictCol.Add Key:="English Indy", Item:="Y"
+    dictCol.Add Key:="French Indy", Item:="AC"
+    dictCol.Add Key:="HDW", Item:="AI"
+
+    Debug.Print "Column Index: " & dictCol(SelKeyCust)
+    Debug.Print "Column Number: " & Range(dictCol(SelKeyCust) & "4").Column
+    
+    ws_noex.Activate
+    On Error Resume Next
+    ws_noex.ShowAllData
+    Range("A4:BB" & LR_noex).AutoFilter Field:=Range(dictCol(SelKeyCust) & "4").Column, Criteria1:="<>"
+    ws_noex.Range("L4:L" & LR_noex).SpecialCells(xlCellTypeVisible).Copy
+    'Range("P6:P" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Select
+    'Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_Valid.Range("G3")
+    ws_Valid.Range("G3").PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    ' // Delete duplicate and sort
+    ws_Valid.Activate
+    Range("$A$3:$A$" & (LR_PMPriceM - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$A$3:$A$" & Cells(Rows.Count, 1).End(xlUp).Row).Sort Key1:=Range("A3:A" & Cells(Rows.Count, 1).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    Range("$C$3:$C$" & (LR_IndKey - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$C$3:$C$" & Cells(Rows.Count, 3).End(xlUp).Row).Sort Key1:=Range("C3:C" & Cells(Rows.Count, 3).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    Range("$E$3:$E$" & (LR_MarginTire - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$E$3:$E$" & Cells(Rows.Count, 5).End(xlUp).Row).Sort Key1:=Range("E3:E" & Cells(Rows.Count, 5).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    
+    Range("A1").Formula = "=COUNTA(A4:A" & Cells(Rows.Count, 1).End(xlUp).Row & ")"
+    Range("B1").Formula = "=A1-C1"
+    Range("C1").Formula = "=COUNTA(C4:C" & Cells(Rows.Count, 3).End(xlUp).Row & ")"
+    Range("D1").Formula = "=C1-E1"
+    Range("E1").Formula = "=COUNTA(E4:E" & Cells(Rows.Count, 5).End(xlUp).Row & ")"
+    Range("G1").Formula = "=COUNTA(G4:G" & Cells(Rows.Count, 7).End(xlUp).Row & ")"
+    Range("A2").Value = "All Key Customer"
+    Range("C2").Value = "Individual"
+    Range("E2").Value = "With Margin"
+    Range("G2").Value = "Master Price List - " & SelKeyCust
+    Range("B3, D3, F3").Value = "Check"
+    Range("B4").Formula = "=MATCH(A4,$C$4:$C$" & Cells(Rows.Count, 3).End(xlUp).Row & ",0)"
+    Range("B4").AutoFill Destination:=Range("B4:B" & Cells(Rows.Count, 1).End(xlUp).Row)
+    Range("D4").Formula = "=MATCH(C4,$E$4:$E$" & Cells(Rows.Count, 5).End(xlUp).Row & ",0)"
+    Range("D4").AutoFill Destination:=Range("D4:D" & Cells(Rows.Count, 3).End(xlUp).Row)
+    Range("F4").Formula = "=MATCH(E4,$G$4:$G$" & Cells(Rows.Count, 7).End(xlUp).Row & ",0)"
+    Range("F4").AutoFill Destination:=Range("F4:F" & Cells(Rows.Count, 5).End(xlUp).Row)
+    
+    'Create button for next macro
+    ws_Valid.Shapes.AddShape(msoShapeRoundedRectangle, 409.5, 3, 132.75, 24).Name = "Validation"
+    ws_Valid.Shapes("Validation").Select
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "Rough Validation"
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 16).ParagraphFormat.Alignment = msoAlignCenter
+    Selection.OnAction = "Validation"
+    Range("M1").Value = "5. Auto Validation, please check manually if necessary"
+    Range("I1").Select
+    
+    ws_PMPriceM.Activate
+    
+    Call OptimizeCode_End
+    
+End Sub
+
+Sub Validation()
+'
+' Validation Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    Dim ws_allM, ws_Valid As Worksheet
+    Dim LRtemp, LRtemp2, LRallM As Long
+    Set ws_allM = Sheets("All_Models")
+    Set ws_Valid = Sheets("Validation")
+    ws_Valid.Activate
+    ws_Valid.Shapes("Validation").delete
+    Range("M1").ClearContents
+
+    'Advanced filter in Master File
+    Range("A3:G3").AutoFilter
+    Range("$A$3:$G$" & WorksheetFunction.Max(Cells(Rows.Count, 1).End(xlUp).Row, Cells(Rows.Count, 7).End(xlUp).Row)).AutoFilter Field:=2, Criteria1:="#N/A"
+    On Error Resume Next
+    Range("A3", Range("A3").End(xlDown)).Copy Destination:=Range("J2")
+    Application.CutCopyMode = False
+    ActiveSheet.ShowAllData
+    LRtemp = Cells(Rows.Count, 10).End(xlUp).Row + 7
+    Range("$A$3:$G$" & WorksheetFunction.Max(Cells(Rows.Count, 1).End(xlUp).Row, Cells(Rows.Count, 7).End(xlUp).Row)).AutoFilter Field:=4, Criteria1:="#N/A"
+    On Error Resume Next
+    Range("C3", Range("C3").End(xlDown)).Copy Destination:=Range("J" & LRtemp)
+    Application.CutCopyMode = False
+    ActiveSheet.ShowAllData
+    LRtemp2 = Cells(Rows.Count, 10).End(xlUp).Row + 7
+    Range("$A$3:$G$" & WorksheetFunction.Max(Cells(Rows.Count, 1).End(xlUp).Row, Cells(Rows.Count, 7).End(xlUp).Row)).AutoFilter Field:=6, Criteria1:="#N/A"
+    On Error Resume Next
+    Range("E3", Range("E3").End(xlDown)).Copy Destination:=Range("J" & LRtemp2)
+    Application.CutCopyMode = False
+    ActiveSheet.ShowAllData
+    
+    Range("I2").Value = "missing in Individual"
+    Range("I" & LRtemp).Value = "missing in margin"
+    Range("I" & LRtemp2).Value = "OLAP included, MasterF not, check if add back"
+    Range("J2, J" & LRtemp & ", J" & LRtemp2).Value = "Model.Suffix"
+    
+    LRallM = ws_allM.Cells(Rows.Count, 12).End(xlUp).Row
+    On Error Resume Next
+    ws_allM.Range("A4:BB" & LRallM).AdvancedFilter Action:=xlFilterCopy, CriteriaRange:= _
+        ws_Valid.Range("J2:J" & LRtemp - 7), CopyToRange:=ws_Valid.Range("L2"), Unique:=False
+    On Error Resume Next
+    ws_allM.Range("A4:BB" & LRallM).AdvancedFilter Action:=xlFilterCopy, CriteriaRange:= _
+        ws_Valid.Range("J" & LRtemp & ":J" & LRtemp2 - 7), CopyToRange:=ws_Valid.Range("L" & LRtemp), Unique:=False
+    On Error Resume Next
+    ws_allM.Range("A4:BB" & LRallM).AdvancedFilter Action:=xlFilterCopy, CriteriaRange:= _
+        ws_Valid.Range("J" & LRtemp2 & ":J" & ws_Valid.Cells(Rows.Count, 10).End(xlUp).Row), CopyToRange:=ws_Valid.Range("L" & LRtemp2), Unique:=False
+
+    Columns("A:J").AutoFit
+    Columns("N:N").AutoFit
+    Columns("Q:Q").NumberFormat = "m/d/yyyy"
+    ws_allM.Range("A1:BB1").Copy Destination:=ws_Valid.Range("L1")
+    
+    Range("J" & ws_Valid.Cells(Rows.Count, 10).End(xlUp).Row + 7).Select
+    
+    ActiveSheet.Hyperlinks.Add Anchor:=Selection, Address:= _
+        ThisWorkbook.Name, SubAddress:="'3 Margin Tire Setup'!F1", _
+        TextToDisplay:="5. Calculate EDLC"
+    
+    Call OptimizeCode_End
+    
+    
+    
+End Sub
+
+
+Sub Calculation()
+'
+' Calculation Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    'Delete previous calculation
+    Columns(Columns(Split(Split((ActiveSheet.PivotTables("PivotTable1").TableRange1.Address), ":")(1), "$")(1)).Column + 1).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Find the last column and row
+    Dim Lcol, Lrow As Long
+    Lcol = Cells(11, Columns.Count).End(xlToLeft).Column
+    Lrow = Cells(Rows.Count, 4).End(xlUp).Row
+    Debug.Print "Last Column: " & Lcol & "; Last Row: " & Lrow
+    
+    
+    'Set up the calculations
+    Cells(11, Lcol + 2).Value = "STA"
+    Cells(11, Lcol + 3).Formula = "=D11"
+    Cells(11, Lcol + 3).AutoFill Destination:=Range(Cells(11, Lcol + 3).Address & ":" & Cells(Lrow, Lcol + 3).Address)
+    Cells(11, Lcol + 4).Formula = "=F11"
+    Cells(11, Lcol + 4).AutoFill Destination:=Range(Cells(11, Lcol + 4).Address & ":" & Cells(11, Lcol * 2 - 2).Address)
+    Cells(12, Lcol + 4).Value = "EDLC Margin"
+    Cells(13, Lcol + 4).FormulaR1C1 = "=RC[" & (-Lcol + 2) & "]"
+    Cells(14, Lcol + 4).Value = "Promo Cost"
+    Cells(15, Lcol + 4).FormulaR1C1 = "=RC[" & (-Lcol + 2) & "]"
+    Range(Cells(12, Lcol + 4).Address & ":" & Cells(15, Lcol + 4).Address).AutoFill Destination:=Range(Cells(12, Lcol + 4).Address & ":" & Cells(Lrow, Lcol + 4).Address)
+    Cells(10, Lcol + 5).Formula = "=G10"
+    Cells(10, Lcol + 5).AutoFill Destination:=Range(Cells(10, Lcol + 5).Address & ":" & Cells(10, Lcol * 2 - 2).Address)
+    Cells(12, Lcol + 2).FormulaR1C1 = "=IF(RC[2]=""PM Promo Price"", RC[1],""."")"
+    Cells(12, Lcol + 2).AutoFill Destination:=Range(Cells(12, Lcol + 2).Address & ":" & Cells(Lrow, Lcol + 2).Address)
+    Dim MinusC As Long
+    MinusC = -Lcol + 2
+    Debug.Print MinusC
+    Cells(12, Lcol + 5).FormulaR1C1 = "=1-R[3]C/IF(R[1]C[" & MinusC & "]>0,R[1]C[" & MinusC & "],RC[" & MinusC & "])"
+    Cells(12, Lcol + 5).Style = "Percent"
+    Cells(12, Lcol + 5).AutoFill Destination:=Range(Cells(12, Lcol + 5).Address & ":" & Cells(12, Lcol * 2 - 2).Address)
+    Cells(14, Lcol + 5).FormulaR1C1 = "=IF(R[-1]C[" & MinusC & "]=0,"""",IF(RC[" & MinusC & "]=0,""error"",ROUND(R[-1]C[" & MinusC & "]*(1-RC[" & MinusC & "]),0)))"
+    Cells(14, Lcol + 5).AutoFill Destination:=Range(Cells(14, Lcol + 5).Address & ":" & Cells(14, Lcol * 2 - 2).Address)
+    Cells(15, Lcol + 5).FormulaR1C1 = "=ROUNDUP(AVERAGE(R[-1]C" & (Lcol + 5) & ":R[-1]C" & (Lcol * 2 - 2) & "),0)"
+    Cells(15, Lcol + 5).AutoFill Destination:=Range(Cells(15, Lcol + 5).Address & ":" & Cells(15, Lcol * 2 - 2).Address)
+    
+    Range(Cells(12, Lcol + 5).Address & ":" & Cells(15, Lcol * 2 - 2).Address).AutoFill Destination:=Range(Cells(12, Lcol + 5).Address & ":" & Cells(Lrow, Lcol * 2 - 2).Address)
+    
+    Cells(1, Lcol + 2).Select
+
+    Call OptimizeCode_End
+
+End Sub
+
+Sub EDLC_Upload()
+'
+' EDLC_Upload Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    'Delete previous formula
+    Columns(Columns(Split(Split((ActiveSheet.PivotTables("PivotTable1").TableRange1.Address), ":")(1), "$")(1)).Column + 1).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Find the last column and row
+    Dim Lcol, Lrow As Long
+    Lcol = Cells(11, Columns.Count).End(xlToLeft).Column
+    Lrow = Cells(Rows.Count, 8).End(xlUp).Row
+    Debug.Print "Last Column: " & Lcol & "; Last Row: " & Lrow
+    
+    'Set up the calculations
+    Cells(10, Lcol + 3).Formula = "=I10"
+    Cells(10, Lcol + 3).AutoFill Destination:=Range(Cells(10, Lcol + 3).Address & ":" & Cells(10, Lcol * 2 - 6).Address)
+    Cells(11, Lcol + 2).Formula = "=H11"
+    Cells(11, Lcol + 2).AutoFill Destination:=Range(Cells(11, Lcol + 2).Address & ":" & Cells(11, Lcol * 2 - 6).Address)
+    Cells(11, Lcol + 2).AutoFill Destination:=Range(Cells(11, Lcol + 2).Address & ":" & Cells(Lrow, Lcol + 2).Address)
+    Cells(12, Lcol + 3).FormulaR1C1 = "=SUMIFS('3 Margin Tire Setup'!C,'3 Margin Tire Setup'!C" & Lcol + 1 & ",'4 EDLC Upload'!RC" & Lcol + 2 & ",'3 Margin Tire Setup'!C" & Lcol + 2 & ",""EDLC"")"
+    Cells(12, Lcol + 3).AutoFill Destination:=Range(Cells(12, Lcol + 3).Address & ":" & Cells(12, Lcol * 2 - 6).Address)
+    Range(Cells(12, Lcol + 3).Address & ":" & Cells(12, Lcol * 2 - 6).Address).AutoFill Destination:=Range(Cells(12, Lcol + 3).Address & ":" & Cells(Lrow, Lcol * 2 - 6).Address)
+    
+    Cells(1, Lcol + 2).Select
+    
+    Call OptimizeCode_End
+
+End Sub
+
+Sub Refresh()
+'
+' Refresh Macro
+'
+
+'
+    
+    Call OptimizeCode_Begin
+    ActiveWorkbook.RefreshAll
+    Call OptimizeCode_End
+
+End Sub
+
+Sub WorkingFile()
+
+    Call OptimizeCode_Begin
+
+    Dim ws_MassMod, ws_workF, ws_noex, ws_ModelM As Worksheet
+    Set ws_MassMod = Sheets("Mass Modification")
+    Dim StWk, EndWk, TtlWk, LstCol As Long
+    Dim SelKeyCust As String
+    Dim StDate As Date
+        
+    Set ws_workF = Sheets("working file")
+    Set ws_noex = Sheets("no_exclusive")
+    Set ws_ModelM = Sheets("OLAP Model Master")
+
+    'Delete previous weeks
+    ws_workF.Activate
+    Columns(28).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Get the Start Week of the Planner
+    StWk = ws_MassMod.Range("G11").Value
+    EndWk = ws_MassMod.Cells(11, ws_MassMod.Cells(8, Columns.Count).End(xlToLeft).Column).Value
+    Debug.Print "Start Week: " & StWk & "; EndWk: " & EndWk
+    
+    TtlWk = EndWk - StWk + 1
+    LstCol = 15 + TtlWk * 4
+    Debug.Print Cells(5, LstCol).Address
+    
+    'Get the Start Date of the Planner
+    Debug.Print ws_MassMod.Range("G11").Value
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = True
+    StDate = ws_MassMod.Range("G12").Value
+    Debug.Print "Planner Start Date: " & StDate
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = False
+        
+    'Set the template Date
+    Range("P3").Value = StDate
+    Range("T1:W5").AutoFill Destination:=Range("T1:" & Cells(5, LstCol).Address)
+    
+    Dim i, j, k As Long
+    For i = 16 To LstCol Step 4
+        For j = 1 To 4
+            ws_workF.Cells(2, i + (j - 1)).Value = "Week " & StWk
+        Next j
+        
+    StWk = StWk + 1
+    Next i
+    
+    Range("P2:S2").Copy
+    Range("T2:" & Cells(2, LstCol).Address).PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Cells(1, LstCol).Copy
+    Cells(1, LstCol + 1).PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    
+    Cells(2, LstCol + 1).Value = "DESCRIPTION"
+    Cells(2, LstCol + 1).Font.ColorIndex = xlAutomatic
+    Cells(2, LstCol + 1).Interior.Color = 15000000
+    Cells(2, LstCol + 1).Copy Destination:=Cells(5, LstCol + 1)
+    
+    'Set File Title
+    Range("A1").Value = Format(Range("P3").Value, "mmm d") & " - " & Format(Range(Cells(4, LstCol).Address).Value, "mmm d") & " EDLC"
+    Range("O5").Value = ws_MassMod.Range("G9").Value & " Cost"
+    Range("H5").Value = "Promotion in " & ws_MassMod.Range("G9").Value
+    
+    'Delete all previous data
+    Range("C6:C" & Cells(Rows.Count, 3).End(xlDown).Row).Select
+    Selection.EntireRow.delete
+    
+    'Copy all Models from no exclusive
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    
+    Dim dictCol As New Scripting.Dictionary
+    dictCol.Add Key:="AM CAM", Item:="AG"
+    dictCol.Add Key:="BMTC", Item:="AE"
+    dictCol.Add Key:="CAS", Item:="BB"
+    dictCol.Add Key:="Trail", Item:="AI"
+    dictCol.Add Key:="English Indy", Item:="Y"
+    dictCol.Add Key:="French Indy", Item:="AC"
+    dictCol.Add Key:="HDW", Item:="AI"
+
+    Debug.Print "Column Index: " & dictCol(SelKeyCust)
+    Debug.Print "Column Number: " & Range(dictCol(SelKeyCust) & "4").Column
+    
+    ws_noex.Activate
+    On Error Resume Next
+    ws_noex.ShowAllData
+    Range("A4:BB" & Cells(Rows.Count, 1).End(xlUp).Row).AutoFilter Field:=Range(dictCol(SelKeyCust) & "4").Column, Criteria1:="<>"
+    ws_noex.AutoFilter.Range.Offset(1, 0).SpecialCells(xlCellTypeVisible).Cells(1, 10).Select
+    Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_workF.Range("B6")
+    ws_noex.AutoFilter.Range.Offset(1, 0).SpecialCells(xlCellTypeVisible).Cells(1, 12).Select
+    Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_workF.Range("C6")
+    
+    'Set Formulas to every column
+    ws_workF.Activate
+    Range("A6").Formula = "=XLOOKUP(@C:C,'5 Channel'!D:D,'5 Channel'!A:A)"
+    Range("A6").AutoFill Destination:=Range("A6:A" & Cells(Rows.Count, 3).End(xlUp).Row)
+    Range("A6:C" & Cells(Rows.Count, 3).End(xlUp).Row).Sort Key1:=Range("A6:A" & Cells(Rows.Count, 3).End(xlUp).Row), order1:=xlAscending, Header:=xlNo
+    
+    ws_ModelM.PivotTables("PivotTable1").PivotFields("[Product].[Model].[Model]") _
+        .ClearAllFilters
+    
+    Range("D6").Formula = "=IF(XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!M:M,"""",0)=0,"""",XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!M:M,"""",0))"
+    Range("E6").Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!D:D,"""",0)"
+    Range("F6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!N:N,""CHECK"",0)"
+    Range("G6").Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!E:E,"""",0)"
+    Range("H6").Formula = "=IF(@N:N>0,""Y"","""")"
+    Range("I6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!Q:Q,"""",0)"
+    Range("J6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!R:R,"""",0)"
+    Range("K6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!T:T,"""",0)"
+    Range("L6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!U:U,"""",0)"
+    Range("M6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!" & dictCol(SelKeyCust) & ":" & dictCol(SelKeyCust) & ","""",0)"
+    Range("N6").Formula = "=SUMIF('5 Channel'!D:D,@C:C,'5 Channel'!I:I)"
+    Range("O6").Formula = "=MINIFS(M6:N6,M6:N6,"">0"")"
+    Range("P6").Formula = "=SUMIF('5 Channel'!$D:$D,@$C:$C,'5 Channel'!F:F)"
+    Range("P6").AutoFill Destination:=Range("P6:Q6")
+    Range("R6").Formula = "=1-($O6-S6)/MINIFS(P6:Q6,P6:Q6,"">0"")"
+    Range("R6").Style = "Percent"
+    Range("P6:S6").AutoFill Destination:=Range("P6:" & Cells(6, LstCol).Address)
+    Cells(6, LstCol + 1).Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!S:S,"""",0)"
+    Range("D6:" & Cells(6, LstCol + 1).Address).AutoFill Destination:=Range("D6:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address)
+    
+    'Mark unpromoted Models and re-calculate
+    Columns("A:A").Select
+    Selection.Find(What:="#N/A", After:=ActiveCell, LookIn:=xlValues, LookAt _
+        :=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:= _
+        False, SearchFormat:=False).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Interior.Color = 65535
+    Selection.Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!A:A,"""",0)"
+    
+    'Revise the calculation for unpromoted Models
+    Rows("5:5").AutoFilter
+    ActiveSheet.Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AutoFilter Field:=1, Criteria1:=RGB(255, _
+        255, 0), Operator:=xlFilterCellColor
+    Range("N6:N" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Formula = "=ROUND(SUMIF(no_exclusive!$L:$L,@'working file'!$C:$C,no_exclusive!$V:$V)*(1-SUMIF('At PG'!$A:$A,@'working file'!$C:$C,'At PG'!$B:$B)),0)"
+    Range("P6:P" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Formula = "=SUMIF(no_exclusive!$L:$L,@'working file'!$C:$C,no_exclusive!$V:$V)"
+    Range("H6:H" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Value = "N"
+    
+    'Set unpromoted accessory as regular price
+    ActiveSheet.Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AutoFilter Field:=7, Criteria1:="*Accessory*"
+    Range("N5:N" & Cells(Rows.Count, "C").Offset(1).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Formula = "=SUMIF('5 Channel'!$D:$D,@$C:$C,'5 Channel'!F:F)"
+    
+    'Auto Fill the file
+    ws_workF.ShowAllData
+    Range("P6:S" & Cells(Rows.Count, "C").End(xlUp).Row).AutoFill Destination:=Range("P6:" & Cells(Cells(Rows.Count, "C").End(xlUp).Row, LstCol).Address)
+ 
+    Range("A5").Select
+    
+    'Save File
+    Dim wb_Macro, wb_noMacro As Workbook
+    Set wb_Macro = ActiveWorkbook
+    Debug.Print wb_Macro.Name
+    ws_workF.Copy
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    Set wb_noMacro = ActiveWorkbook
+    wb_noMacro.Sheets("working file").Select
+    wb_noMacro.Sheets("working file").Name = SelKeyCust
+    ActiveSheet.Shapes("MacroButton").delete
+    ActiveSheet.Shapes("MacroButton2").delete
+    ActiveSheet.Shapes("MacroButton3").delete
+    ActiveSheet.Shapes("MacroButton4").delete
+    
+    Dim path_, name_, FileTitle As String
+    path_ = "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk & "\" & Format(Date, "MMM dd")
+    On Error Resume Next
+    MkDir "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk
+    wb_Macro.Activate
+    FileTitle = ws_workF.Range("A1").Value
+    wb_noMacro.Activate
+    name_ = SelKeyCust & "_" & FileTitle & ".xlsx"
+
+    With CreateObject("Scripting.FileSystemObject")
+        If Not .FolderExists(path_) Then .CreateFolder (path_)
+    End With
+        
+    
+    wb_noMacro.SaveAs fileName:=path_ & "\" & name_
+    wb_noMacro.Close
+    wb_Macro.Activate
+    
+    Call OptimizeCode_End
+
+End Sub
+Sub STA_ReCalculation()
+'
+' STA_ReCalculation Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    'Delete previous calculation
+    Columns(Columns(Split(Split((ActiveSheet.PivotTables("PivotTable1").TableRange1.Address), ":")(1), "$")(1)).Column + 1).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Find the last column and row
+    Dim Lcol, Lrow As Long
+    Lcol = Cells(11, Columns.Count).End(xlToLeft).Column
+    Lrow = Cells(Rows.Count, 4).End(xlUp).Row
+    Debug.Print "Last Column: " & Lcol & "; Last Row: " & Lrow
+    
+    
+    'Set up the calculations
+    Cells(11, Lcol + 2).Value = "STA"
+    Cells(11, Lcol + 3).Formula = "=D11"
+    Cells(11, Lcol + 3).AutoFill Destination:=Range(Cells(11, Lcol + 3).Address & ":" & Cells(Lrow, Lcol + 3).Address)
+    Cells(11, Lcol + 4).Formula = "=F11"
+    Cells(11, Lcol + 4).AutoFill Destination:=Range(Cells(11, Lcol + 4).Address & ":" & Cells(11, Lcol * 2 - 2).Address)
+    Cells(12, Lcol + 4).Value = "EDLC Margin"
+    Cells(13, Lcol + 4).Value = "STA"
+    Cells(14, Lcol + 4).Value = "Promo Cost"
+    Cells(15, Lcol + 4).FormulaR1C1 = "=RC[" & (-Lcol + 2) & "]"
+    Range(Cells(12, Lcol + 4).Address & ":" & Cells(15, Lcol + 4).Address).AutoFill Destination:=Range(Cells(12, Lcol + 4).Address & ":" & Cells(Lrow, Lcol + 4).Address)
+    Cells(10, Lcol + 5).Formula = "=G10"
+    Cells(10, Lcol + 5).AutoFill Destination:=Range(Cells(10, Lcol + 5).Address & ":" & Cells(10, Lcol * 2 - 2).Address)
+    Cells(12, Lcol + 2).FormulaR1C1 = "=IF(RC[2]=""STA"", RC[1],""."")"
+    Cells(12, Lcol + 2).AutoFill Destination:=Range(Cells(12, Lcol + 2).Address & ":" & Cells(Lrow, Lcol + 2).Address)
+    Dim MinusC As Long
+    MinusC = -Lcol + 2
+    Debug.Print MinusC
+    Cells(12, Lcol + 5).FormulaR1C1 = "=1-R[3]C/IF(R[1]C[" & MinusC & "]>0,R[1]C[" & MinusC & "],RC[" & MinusC & "])"
+    Cells(12, Lcol + 5).Style = "Percent"
+    Cells(12, Lcol + 5).AutoFill Destination:=Range(Cells(12, Lcol + 5).Address & ":" & Cells(12, Lcol * 2 - 2).Address)
+    Cells(13, Lcol + 5).FormulaR1C1 = "=IFERROR(MAX(R[2]C-R[1]C,0),0)"
+    Cells(13, Lcol + 5).AutoFill Destination:=Range(Cells(13, Lcol + 5).Address & ":" & Cells(13, Lcol * 2 - 2).Address)
+    Cells(14, Lcol + 5).FormulaR1C1 = "=IF(R[-1]C[" & MinusC & "]=0,"""",IF(RC[" & MinusC & "]=0,""error"",ROUND(R[-1]C[" & MinusC & "]*(1-RC[" & MinusC & "]),0)))"
+    Cells(14, Lcol + 5).AutoFill Destination:=Range(Cells(14, Lcol + 5).Address & ":" & Cells(14, Lcol * 2 - 2).Address)
+    Cells(15, Lcol + 5).FormulaR1C1 = "=RC[" & MinusC & "]"
+    Cells(15, Lcol + 5).AutoFill Destination:=Range(Cells(15, Lcol + 5).Address & ":" & Cells(15, Lcol * 2 - 2).Address)
+    
+    Range(Cells(12, Lcol + 5).Address & ":" & Cells(15, Lcol * 2 - 2).Address).AutoFill Destination:=Range(Cells(12, Lcol + 5).Address & ":" & Cells(Lrow, Lcol * 2 - 2).Address)
+    
+    Cells(1, Lcol + 2).Select
+
+    Call OptimizeCode_End
+
+End Sub
+
+
+Sub ReEditWorkingF()
+'
+' ReEditWorkingF Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    
+    'Delete previous formula
+    Columns(Columns(Split(Split((ActiveSheet.PivotTables("PivotTable1").TableRange1.Address), ":")(1), "$")(1)).Column + 1).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Find the last column and row
+    Dim Lcol, Lrow, LcolMM, LrowMM, Lcolwf, Lrowwf As Long
+    Lcol = Cells(11, Columns.Count).End(xlToLeft).Column
+    Lrow = Cells(Rows.Count, 8).End(xlUp).Row
+    Debug.Print "Last Column: " & Lcol & "; Last Row: " & Lrow
+    
+    'Find the last column of Mass Modification sheet
+    Dim ws_MassMod As Worksheet
+    Set ws_MassMod = Sheets("Mass Modification")
+    LcolMM = ws_MassMod.Cells(8, Columns.Count).End(xlToLeft).Column
+    LrowMM = ws_MassMod.Cells(Rows.Count, LcolMM + 3).End(xlUp).Row
+    Debug.Print "Last Column of Mass Modification Sheet: " & LcolMM & "; Last Row of Mass Modification Sheet: " & LrowMM
+    
+    'Set up the calculations
+    Cells(10, Lcol + 3).Formula = "=F10"
+    Cells(11, Lcol + 3).Formula = "=F11"
+    Range(Cells(10, Lcol + 3).Address & ":" & Cells(11, Lcol + 3).Address).AutoFill Destination:=Range(Cells(10, Lcol + 3).Address & ":" & Cells(11, Lcol * 2 - 3).Address)
+    Cells(12, Lcol + 2).Formula = "=D12"
+    Cells(12, Lcol + 2).AutoFill Destination:=Range(Cells(12, Lcol + 2).Address & ":" & Cells(Lrow, Lcol + 2).Address)
+    Cells(12, Lcol + 3).Formula = "=F12"
+    Cells(12, Lcol + 4).Formula = "=G12"
+    Range(Cells(12, Lcol + 3).Address & ":" & Cells(12, Lcol + 4).Address).AutoFill Destination:=Range(Cells(12, Lcol + 3).Address & ":" & Cells(Lrow, Lcol + 4).Address)
+    Cells(12, Lcol + 5).Value = "EDLC Margin"
+    Cells(12, Lcol + 6).Value = "STA"
+    'Dim BaseN As Long
+    'BaseN = Lcol + 2 - LcolMM - 4
+    'Cells(13, Lcol + 6).FormulaR1C1 = "=XLOOKUP(RC4,'Mass Modification'!C" & LcolMM + 2 & ",'Mass Modification'!C[" & -BaseN - 3 * Cells(8, Lcol + 6).Value & "],"""")"
+    Cells(13, Lcol + 6).FormulaR1C1 = "=INDEX('Mass Modification'!R12C" & LcolMM + 5 & ":R" & LrowMM & "C" & Lcol * 2 - 2 & ",MATCH(ForEdit!RC" & Lcol + 2 & ",'Mass Modification'!R12C" & LcolMM + 2 & ":R" & LrowMM & "C" & LcolMM + 2 & ",0),MATCH(ForEdit!R11C,'Mass Modification'!R11C" & LcolMM + 5 & ":R11C" & LcolMM * 2 - 2 & "))"
+    Range(Cells(12, Lcol + 3).Address & ":" & Cells(13, Lcol + 6).Address).AutoFill Destination:=Range(Cells(12, Lcol + 3).Address & ":" & Cells(13, Lcol * 2 - 3).Address)
+    Range(Cells(13, Lcol + 3).Address & ":" & Cells(13, Lcol * 2 - 3).Address).AutoFill Destination:=Range(Cells(13, Lcol + 3).Address & ":" & Cells(Lrow, Lcol * 2 - 3).Address)
+    Cells(1, Lcol + 2).Select
+    
+    'Set filter criteria
+    Dim ModiList, ws_workF As Worksheet
+    Set ModiList = Sheets("Modification List")
+    Set ws_workF = Sheets("working file")
+    ModiList.Range("A1:A" & Cells(Rows.Count, 1).End(xlUp).Row).Copy Destination:=ModiList.Range("G2")
+    
+    ws_workF.Activate
+    On Error Resume Next
+    ws_workF.ShowAllData
+    Lcolwf = Cells(5, Columns.Count).End(xlToLeft).Column
+    Lrowwf = Cells(Rows.Count, 3).End(xlUp).Row
+    Debug.Print Lcolwf & ", " & Lrowwf
+    Debug.Print Cells(Lrowwf, Lcolwf).Address
+    Range("A5:" & Cells(Lrowwf, Lcolwf).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+        ModiList.Range("G1:G" & ModiList.Cells(Rows.Count, 7).End(xlUp).Row), Unique:=False
+    
+    'Set STA formulas to all filtered models
+    ws_workF.Range("S6:S" & Cells(ws_workF.Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).FormulaR1C1 = "=XLOOKUP(@C" & 3 & ",ForEdit!C" & Lcol + 2 & ",ForEdit!C[" & Lcol - 13 & "],"""")"
+    ws_workF.Range("S6:S" & Cells(ws_workF.Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+    ws_workF.ShowAllData
+    ws_workF.Range("P6:S" & Lrowwf).AutoFill Destination:=ws_workF.Range("P6:" & Cells(Lrowwf, Lcolwf - 1).Address)
+    
+    'Auto Save
+    Dim wb_Macro, wb_noMacro As Workbook
+    Dim StWk, EndWk, TtlWk As Long
+    StWk = Sheets("1 PM Pricing Master").Range("E3").Value
+    EndWk = Sheets("1 PM Pricing Master").Range("E4").Value
+    TtlWk = EndWk - StWk + 1
+    SelKeyCust = Sheets("1 PM Pricing Master").Range("E2").Value
+    Set wb_Macro = ActiveWorkbook
+    Debug.Print wb_Macro.Name
+    ws_workF.Copy
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    Set wb_noMacro = ActiveWorkbook
+    wb_noMacro.Sheets("working file").Select
+    wb_noMacro.Sheets("working file").Name = SelKeyCust
+    ActiveSheet.Shapes("MacroButton").delete
+    ActiveSheet.Shapes("MacroButton2").delete
+    ActiveSheet.Shapes("MacroButton3").delete
+    ActiveSheet.Shapes("MacroButton4").delete
+    
+    Dim path_, name_, FileTitle As String
+    path_ = "E:\PP&T\EDLC\Week " & StWk & " - Week " & EndWk & "\" & Format(Date, "MMM dd")
+    On Error Resume Next
+    MkDir "E:\PP&T\EDLC\Week " & StWk & " - Week " & EndWk
+    wb_Macro.Activate
+    FileTitle = ws_workF.Range("A1").Value
+    wb_noMacro.Activate
+    name_ = SelKeyCust & "_" & FileTitle & " (" & Format(Date, "m.dd") & ")" & ".xlsx"
+
+    With CreateObject("Scripting.FileSystemObject")
+        If Not .FolderExists(path_) Then .CreateFolder (path_)
+    End With
+        
+    
+    wb_noMacro.SaveAs fileName:=path_ & "\" & name_
+    wb_noMacro.Close
+    wb_Macro.Activate
+    
+    Call OptimizeCode_End
+
+End Sub
+
+
+Sub WorkingFile_NewEDLC()
+
+    Call OptimizeCode_Begin
+
+    Dim ws_MassMod, ws_workF, ws_noex, ws_ModelM As Worksheet
+    Set ws_MassMod = Sheets("Mass Modification")
+    Dim StWk, EndWk, TtlWk, LstCol As Long
+    Dim SelKeyCust As String
+    Dim StDate As Date
+        
+    Set ws_workF = Sheets("working file")
+    Set ws_noex = Sheets("no_exclusive")
+    Set ws_ModelM = Sheets("OLAP Model Master")
+
+    'Delete previous weeks
+    ws_workF.Activate
+    Columns(28).Select
+    Range(Selection, Selection.End(xlToRight)).delete Shift:=xlToLeft
+    
+    'Get the Start Week of the Planner
+    StWk = ws_MassMod.Range("G11").Value
+    EndWk = ws_MassMod.Cells(11, ws_MassMod.Cells(8, Columns.Count).End(xlToLeft).Column).Value
+    Debug.Print "Start Week: " & StWk & "; EndWk: " & EndWk
+    
+    TtlWk = EndWk - StWk + 1
+    LstCol = 15 + TtlWk * 4
+    Debug.Print Cells(5, LstCol).Address
+    
+    'Get the Start Date of the Planner
+    Debug.Print ws_MassMod.Range("G11").Value
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = True
+    StDate = ws_MassMod.Range("G12").Value
+    Debug.Print "Planner Start Date: " & StDate
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & ws_MassMod.Range("G11").Value & "]&[" & ws_MassMod.Range("G8").Value & "]").DrilledDown = False
+        
+    'Set the template Date
+    Range("P3").Value = StDate
+    Range("T1:W5").AutoFill Destination:=Range("T1:" & Cells(5, LstCol).Address)
+    
+    Dim i, j, k As Long
+    For i = 16 To LstCol Step 4
+        For j = 1 To 4
+            ws_workF.Cells(2, i + (j - 1)).Value = "Week " & StWk
+        Next j
+        
+    StWk = StWk + 1
+    Next i
+    
+    Range("P2:S2").Copy
+    Range("T2:" & Cells(2, LstCol).Address).PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Cells(1, LstCol).Copy
+    Cells(1, LstCol + 1).PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    
+    Cells(2, LstCol + 1).Value = "DESCRIPTION"
+    Cells(2, LstCol + 1).Font.ColorIndex = xlAutomatic
+    Cells(2, LstCol + 1).Interior.Color = 15000000
+    Cells(2, LstCol + 1).Copy Destination:=Cells(5, LstCol + 1)
+    
+    'Set File Title
+    Range("A1").Value = Format(Range("P3").Value, "mmm d") & " - " & Format(Range(Cells(4, LstCol).Address).Value, "mmm d") & " EDLC"
+    
+    'Delete all previous data
+    Range("C6:C" & Cells(Rows.Count, 3).End(xlDown).Row).Select
+    Selection.EntireRow.delete
+    
+    'Copy all Models from no exclusive
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    
+    Dim dictCol As New Scripting.Dictionary
+    dictCol.Add Key:="AM CAM", Item:="AG"
+    dictCol.Add Key:="BMTC", Item:="AE"
+    dictCol.Add Key:="CAS", Item:="BB"
+    dictCol.Add Key:="Trail", Item:="AI"
+    dictCol.Add Key:="English Indy", Item:="Y"
+    dictCol.Add Key:="French Indy", Item:="AC"
+    dictCol.Add Key:="HDW", Item:="AI"
+
+    Debug.Print "Column Index: " & dictCol(SelKeyCust)
+    Debug.Print "Column Number: " & Range(dictCol(SelKeyCust) & "4").Column
+    
+    ws_noex.Activate
+    On Error Resume Next
+    ws_noex.ShowAllData
+    Range("A4:BB" & Cells(Rows.Count, 1).End(xlUp).Row).AutoFilter Field:=Range(dictCol(SelKeyCust) & "4").Column, Criteria1:="<>"
+    ws_noex.AutoFilter.Range.Offset(1, 0).SpecialCells(xlCellTypeVisible).Cells(1, 10).Select
+    Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_workF.Range("B6")
+    ws_noex.AutoFilter.Range.Offset(1, 0).SpecialCells(xlCellTypeVisible).Cells(1, 12).Select
+    Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_workF.Range("C6")
+    
+    'Set Formulas to every column
+    ws_workF.Activate
+    Range("A6").Formula = "=XLOOKUP(@C:C,'5 Channel'!D:D,'5 Channel'!A:A)"
+    Range("A6").AutoFill Destination:=Range("A6:A" & Cells(Rows.Count, 3).End(xlUp).Row)
+    Range("A6:C" & Cells(Rows.Count, 3).End(xlUp).Row).Sort Key1:=Range("A6:A" & Cells(Rows.Count, 3).End(xlUp).Row), order1:=xlAscending, Header:=xlNo
+    
+    ws_ModelM.PivotTables("PivotTable1").PivotFields("[Product].[Model].[Model]") _
+        .ClearAllFilters
+    
+    Range("D6").Formula = "=IF(XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!M:M,"""",0)=0,"""",XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!M:M,"""",0))"
+    Range("E6").Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!D:D,"""",0)"
+    Range("F6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!N:N,""CHECK"",0)"
+    Range("G6").Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!E:E,"""",0)"
+    Range("H6").Formula = "=IF(@N:N>0,""Y"","""")"
+    Range("I6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!Q:Q,"""",0)"
+    Range("J6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!R:R,"""",0)"
+    Range("K6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!T:T,"""",0)"
+    Range("L6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!U:U,"""",0)"
+    Range("M6").Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!" & dictCol(SelKeyCust) & ":" & dictCol(SelKeyCust) & ","""",0)"
+    Range("N6").Formula = "=SUMIF('5 Channel'!D:D,@C:C,'5 Channel'!I:I)"
+    Range("O6").Formula = "=MINIFS(M6:N6,M6:N6,"">0"")"
+    Range("P6").Formula = "=SUMIF('5 Channel'!$D:$D,@$C:$C,'5 Channel'!F:F)"
+    Range("P6").AutoFill Destination:=Range("P6:Q6")
+    Range("R6").Formula = "=1-($O6-S6)/MINIFS(P6:Q6,P6:Q6,"">0"")"
+    Range("R6").Style = "Percent"
+    Range("P6:S6").AutoFill Destination:=Range("P6:" & Cells(6, LstCol).Address)
+    Cells(6, LstCol + 1).Formula = "=XLOOKUP(@C:C,no_exclusive!L:L,no_exclusive!S:S,"""",0)"
+    Range("D6:" & Cells(6, LstCol + 1).Address).AutoFill Destination:=Range("D6:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address)
+    
+    'Mark unpromoted Models and re-calculate
+    Columns("A:A").Select
+    Selection.Find(What:="#N/A", After:=ActiveCell, LookIn:=xlValues, LookAt _
+        :=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:= _
+        False, SearchFormat:=False).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Interior.Color = 65535
+    Selection.Formula = "=XLOOKUP(@C:C,'OLAP Model Master'!C:C,'OLAP Model Master'!A:A,"""",0)"
+    
+    'Revise the calculation for unpromoted Models
+    Rows("5:5").AutoFilter
+    ActiveSheet.Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AutoFilter Field:=1, Criteria1:=RGB(255, _
+        255, 0), Operator:=xlFilterCellColor
+    Range("N6:N" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Formula = "=ROUND(SUMIF(no_exclusive!$L:$L,@'working file'!$C:$C,no_exclusive!$V:$V)*(1-SUMIF('At PG'!$A:$A,@'working file'!$C:$C,'At PG'!$B:$B)),0)"
+    Range("P6:P" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Formula = "=SUMIF(no_exclusive!$L:$L,@'working file'!$C:$C,no_exclusive!$V:$V)"
+    ws_workF.ShowAllData
+    Range("P6:S" & Cells(Rows.Count, "C").End(xlUp).Row).AutoFill Destination:=Range("P6:" & Cells(Cells(Rows.Count, "C").End(xlUp).Row, LstCol).Address)
+ 
+    Range("A5").Select
+    
+    'Comparison
+    Dim fileName As String
+    Dim wb_Comp, wb_Macro As Workbook
+    Set wb_Macro = ThisWorkbook
+    Debug.Print wb_Macro.Name
+    fileName = Application.GetOpenFilename(Filefilter:="Excel Files (*.xlsx), *.xlsx", MultiSelect:=False, Title:="Open the last version of EDLC Planner")
+    Set wb_Comp = Workbooks.Open(fileName, ReadOnly:=True)
+    
+    wb_Comp.Sheets(1).Copy Before:=wb_Macro.Sheets("Validation")
+    wb_Comp.Close
+    
+    Dim ws_Comp, ws_ModiList As Worksheet
+    Set ws_Comp = ActiveSheet
+    Set ws_ModiList = Sheets("Modification List")
+    Columns("A:D").Select
+    Selection.Insert Shift:=xlToRight
+    ws_workF.Columns("C:C").Copy Destination:=ws_Comp.Columns("A:A")
+    ws_Comp.Range("B5").Value = "new added = N/A"
+    ws_Comp.Range("B6").FormulaR1C1 = "=MATCH(RC[-1],C[5],0)"
+    ws_Comp.Range("B6").AutoFill Destination:=Range("B6:B" & Cells(Rows.Count, "A").End(xlUp).Row)
+    ws_Comp.Range("C5").Value = "New EDLC"
+    ws_Comp.Range("D5").Value = "check"
+    ws_Comp.Range("C6").Formula = "=XLOOKUP(@G:G,'working file'!C:C,'working file'!N:N)"
+    ws_Comp.Range("D6").Formula = "=C6=R6"
+    ws_Comp.Range("C6:D6").AutoFill Destination:=Range("C6:D" & WorksheetFunction.Max(Cells(Rows.Count, "G").End(xlUp).Row, Cells(Rows.Count, "A").End(xlUp).Row))
+    Dim LRComp As Long
+    LRComp = Cells(Rows.Count, "G").End(xlUp).Row
+    ws_Comp.Rows("5:5").AutoFilter
+    ws_Comp.Rows("5:5").AutoFilter Field:=4, Criteria1:="FALSE"
+    ws_Comp.Range("G5:G" & LRComp).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_workF.Activate
+        Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("N6:N" & Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+        ws_workF.ShowAllData
+    End If
+    
+    ws_Comp.Activate
+    ws_Comp.ShowAllData
+    ws_Comp.Rows("5:5").AutoFilter Field:=4, Criteria1:="#N/A"
+    ws_ModiList.Range("K:K").ClearContents
+    ws_Comp.Range("G5:G" & LRComp).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+    
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_Comp.Activate
+        ws_Comp.ShowAllData
+        Range("E5:" & Cells(LRComp, LstCol + 5).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("G6:G" & LRComp).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+        Range("G6:G" & LRComp).SpecialCells(xlCellTypeVisible).Font.Strikethrough = True
+        Range("E6:" & Cells(Cells(Rows.Count, "G").End(xlUp).Row, LstCol + 5).Address).SpecialCells(xlCellTypeVisible).Copy Destination:= _
+            ws_workF.Range("A" & ws_workF.Cells(Rows.Count, "A").End(xlUp).Row + 1)
+        ws_Comp.ShowAllData
+    End If
+        
+    ws_Comp.ShowAllData
+    ws_Comp.Rows("5:5").AutoFilter Field:=2, Criteria1:="#N/A"
+    ws_ModiList.Range("K:K").ClearContents
+    ws_Comp.Range("A5:A" & ws_workF.Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_workF.Activate
+        Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("C6:C" & Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Interior.Color = 5296274
+        ws_workF.ShowAllData
+    End If
+    
+    ws_Comp.ShowAllData
+    ws_ModiList.Range("K:K").delete
+    ws_Comp.delete
+        
+    'Save File
+    Dim wb_noMacro As Workbook
+    Debug.Print wb_Macro.Name
+    ws_workF.Activate
+    ws_workF.Copy
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    Set wb_noMacro = ActiveWorkbook
+    wb_noMacro.Sheets("working file").Select
+    wb_noMacro.Sheets("working file").Name = SelKeyCust
+    ActiveSheet.Shapes("MacroButton").delete
+    ActiveSheet.Shapes("MacroButton2").delete
+    ActiveSheet.Shapes("MacroButton3").delete
+    ActiveSheet.Shapes("MacroButton4").delete
+    
+    Dim path_, name_, FileTitle As String
+    path_ = "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk & "\" & Format(Date, "MMM dd")
+    On Error Resume Next
+    MkDir "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk
+    wb_Macro.Activate
+    FileTitle = ws_workF.Range("A1").Value
+    wb_noMacro.Activate
+    name_ = SelKeyCust & "_" & FileTitle & " (" & Format(Date, "m.dd") & ")" & ".xlsx"
+
+    With CreateObject("Scripting.FileSystemObject")
+        If Not .FolderExists(path_) Then .CreateFolder (path_)
+    End With
+        
+    
+    wb_noMacro.SaveAs fileName:=path_ & "\" & name_
+    wb_noMacro.Close
+    wb_Macro.Activate
+    
+    Call OptimizeCode_End
+
+End Sub
+
+
+Sub WorkingFile_CompareOnly()
+
+    Call OptimizeCode_Begin
+
+    Dim ws_MassMod, ws_workF, ws_noex, ws_ModelM As Worksheet
+    Set ws_MassMod = Sheets("Mass Modification")
+    Dim StWk, EndWk, TtlWk As Long
+    Dim SelKeyCust As String
+    Dim StDate As Date
+        
+    Set ws_workF = Sheets("working file")
+    Set ws_noex = Sheets("no_exclusive")
+    Set ws_ModelM = Sheets("OLAP Model Master")
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    
+    StWk = Sheets("1 PM Pricing Master").Range("E3").Value
+    EndWk = Sheets("1 PM Pricing Master").Range("E4").Value
+    TtlWk = EndWk - StWk + 1
+
+    'Clear Format and Color
+    ws_workF.Activate
+    Rows(6).Select
+    Range(Selection, Selection.End(xlDown)).Interior.Color = 16777215
+    
+    Range("A5").Select
+    
+    'Comparison
+    Dim fileName As String
+    Dim wb_Comp, wb_Macro As Workbook
+    Set wb_Macro = ThisWorkbook
+    Debug.Print wb_Macro.Name
+    fileName = Application.GetOpenFilename(Filefilter:="Excel Files (*.xlsx), *.xlsx", MultiSelect:=False, Title:="Open the last version of EDLC Planner")
+    Set wb_Comp = Workbooks.Open(fileName, ReadOnly:=True)
+    
+    wb_Comp.Sheets(1).Copy Before:=wb_Macro.Sheets("Validation")
+    wb_Comp.Close
+    
+    Dim ws_Comp, ws_ModiList As Worksheet
+    Set ws_Comp = ActiveSheet
+    Set ws_ModiList = Sheets("Modification List")
+    Columns("A:D").Select
+    Selection.Insert Shift:=xlToRight
+    ws_workF.Columns("C:C").Copy Destination:=ws_Comp.Columns("A:A")
+    ws_Comp.Range("B5").Value = "new added = N/A"
+    ws_Comp.Range("B6").FormulaR1C1 = "=MATCH(RC[-1],C[5],0)"
+    ws_Comp.Range("B6").AutoFill Destination:=Range("B6:B" & Cells(Rows.Count, "A").End(xlUp).Row)
+    ws_Comp.Range("C5").Value = "New EDLC"
+    ws_Comp.Range("D5").Value = "check"
+    ws_Comp.Range("C6").Formula = "=XLOOKUP(@G:G,'working file'!C:C,'working file'!N:N)"
+    ws_Comp.Range("D6").Formula = "=C6=R6"
+    ws_Comp.Range("C6:D6").AutoFill Destination:=Range("C6:D" & WorksheetFunction.Max(Cells(Rows.Count, "G").End(xlUp).Row, Cells(Rows.Count, "A").End(xlUp).Row))
+    Dim LRComp, LstCol As Long
+    LRComp = WorksheetFunction.Max(Cells(Rows.Count, "G").End(xlUp).Row, Cells(Rows.Count, "A").End(xlUp).Row)
+    LstCol = Cells(5, Columns.Count).End(xlToLeft).Column
+    ws_Comp.Rows("5:5").AutoFilter
+    ws_Comp.Rows("5:5").AutoFilter Field:=4, Criteria1:="FALSE"
+    ws_Comp.Range("G5:G" & LRComp).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_workF.Activate
+        Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("N6:N" & Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+        ws_workF.ShowAllData
+    End If
+    
+    ws_Comp.Activate
+    ws_Comp.ShowAllData
+    ws_Comp.Rows("5:5").AutoFilter Field:=4, Criteria1:="#N/A"
+    ws_ModiList.Range("K:K").ClearContents
+    ws_Comp.Range("G5:G" & LRComp).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+    
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_Comp.Activate
+        ws_Comp.ShowAllData
+        Range("E5:" & Cells(LRComp, LstCol + 5).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("G6:G" & LRComp).SpecialCells(xlCellTypeVisible).Interior.Color = 65535
+        Range("G6:G" & LRComp).SpecialCells(xlCellTypeVisible).Font.Strikethrough = True
+        Range("E6:" & Cells(Cells(Rows.Count, "G").End(xlUp).Row, LstCol + 5).Address).SpecialCells(xlCellTypeVisible).Copy Destination:= _
+            ws_workF.Range("A" & ws_workF.Cells(Rows.Count, "A").End(xlUp).Row + 1)
+    End If
+        
+    ws_Comp.ShowAllData
+    ws_Comp.Rows("5:5").AutoFilter Field:=2, Criteria1:="#N/A"
+    ws_ModiList.Range("K:K").ClearContents
+    ws_Comp.Range("A5:A" & ws_workF.Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Copy Destination:=ws_ModiList.Range("K1")
+    If ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row > 1 Then
+        ws_workF.Activate
+        Range("A5:" & Cells(Cells(Rows.Count, 3).End(xlUp).Row, LstCol + 1).Address).AdvancedFilter Action:=xlFilterInPlace, CriteriaRange:= _
+            ws_ModiList.Range("K1:K" & ws_ModiList.Cells(Rows.Count, "K").End(xlUp).Row), Unique:=False
+        Range("C6:C" & Cells(Rows.Count, 3).End(xlUp).Row).SpecialCells(xlCellTypeVisible).Interior.Color = 5296274
+        ws_workF.ShowAllData
+    End If
+    
+    ws_Comp.ShowAllData
+    ws_ModiList.Range("K:K").delete
+    ws_Comp.delete
+        
+    'Save File
+    Dim wb_noMacro As Workbook
+    Debug.Print wb_Macro.Name
+    ws_workF.Activate
+    ws_workF.Copy
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    Set wb_noMacro = ActiveWorkbook
+    wb_noMacro.Sheets("working file").Select
+    wb_noMacro.Sheets("working file").Name = SelKeyCust
+    ActiveSheet.Shapes("MacroButton").delete
+    ActiveSheet.Shapes("MacroButton2").delete
+    ActiveSheet.Shapes("MacroButton3").delete
+    ActiveSheet.Shapes("MacroButton4").delete
+    
+    Dim path_, name_, FileTitle As String
+    path_ = "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk & "\" & Format(Date, "MMM dd")
+    On Error Resume Next
+    MkDir "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk
+    wb_Macro.Activate
+    FileTitle = ws_workF.Range("A1").Value
+    wb_noMacro.Activate
+    name_ = SelKeyCust & "_" & FileTitle & " (" & Format(Date, "m.dd") & ")" & ".xlsx"
+
+    With CreateObject("Scripting.FileSystemObject")
+        If Not .FolderExists(path_) Then .CreateFolder (path_)
+    End With
+        
+    
+    wb_noMacro.SaveAs fileName:=path_ & "\" & name_
+    wb_noMacro.Close
+    wb_Macro.Activate
+    
+    Call OptimizeCode_End
+
+End Sub
+
+
+
+Sub SaveOnly()
+
+    Call OptimizeCode_Begin
+
+    Dim wb_noMacro, wb_Macro As Workbook
+    Dim ws_workF, ws_MassMod As Worksheet
+    Dim SelKeyCust As String
+    Dim StWk, EndWk, TtlWk As Long
+    Set wb_Macro = ThisWorkbook
+    Set ws_workF = Sheets("working file")
+    Set ws_MassMod = Sheets("Mass Modification")
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    StWk = Sheets("1 PM Pricing Master").Range("E3").Value
+    EndWk = Sheets("1 PM Pricing Master").Range("E4").Value
+    TtlWk = EndWk - StWk + 1
+    
+    'Save File
+    Debug.Print wb_Macro.Name
+    ws_workF.Activate
+    ws_workF.Copy
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("A1").Select
+    Set wb_noMacro = ActiveWorkbook
+    wb_noMacro.Sheets("working file").Select
+    wb_noMacro.Sheets("working file").Name = SelKeyCust
+    ActiveSheet.Shapes("MacroButton").delete
+    ActiveSheet.Shapes("MacroButton2").delete
+    ActiveSheet.Shapes("MacroButton3").delete
+    ActiveSheet.Shapes("MacroButton4").delete
+    
+    Dim path_, name_, FileTitle As String
+    path_ = "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk & "\" & Format(Date, "MMM dd")
+    On Error Resume Next
+    MkDir "E:\PP&T\EDLC\Week " & EndWk - TtlWk + 1 & " - Week " & EndWk
+    wb_Macro.Activate
+    FileTitle = ws_workF.Range("A1").Value
+    wb_noMacro.Activate
+    name_ = SelKeyCust & "_" & FileTitle & " (" & Format(Date, "m.dd") & ")" & ".xlsx"
+
+    With CreateObject("Scripting.FileSystemObject")
+        If Not .FolderExists(path_) Then .CreateFolder (path_)
+    End With
+    
+    wb_noMacro.SaveAs fileName:=path_ & "\" & name_
+    wb_noMacro.Close
+    wb_Macro.Activate
+
+End Sub
+
+Sub SettingT()
+'
+' SettingT Macro
+'
+
+'
+
+    Call OptimizeCode_Begin
+    Dim ws_PMPriceM, ws_IndKey, ws_MarginTire, ws_EDLCUp, ws_Channel, ws_MassMod, ws_edit, ws_atPG As Worksheet
+    Set ws_PMPriceM = Sheets("1 PM Pricing Master")
+    Set ws_IndKey = Sheets("2 Individual Key")
+    Set ws_MarginTire = Sheets("3 Margin Tire Setup")
+    Set ws_EDLCUp = Sheets("4 EDLC Upload")
+    Set ws_Channel = Sheets("5 Channel")
+    Set ws_MassMod = Sheets("Mass Modification")
+    Set ws_edit = Sheets("ForEdit")
+    Set ws_atPG = Sheets("At PG")
+
+    'Userform for Key Customer Selection
+    Dim KCustList As New UserForm1
+    
+    KCustList.Show
+    
+    Debug.Print "Key Customer Selected: " & SelKeyCust
+    Dim SelArr() As Variant
+    
+    If SelKeyCust = "BMTC" Then
+        ReDim SelArr(1 To 2)
+        SelArr(1) = "[Account].[Hierarchy].[Account Name].&[Tanguay]"
+        SelArr(2) = "[Account].[Hierarchy].[Account Name].&[Brault & Martineau]"
+    Else
+        Dim dict As New Scripting.Dictionary
+        dict.Add Key:="AM CAM", Item:="[AM-CAM]"
+        dict.Add Key:="CAS", Item:="[EIPG]"
+        dict.Add Key:="Trail", Item:="[Trail]"
+        dict.Add Key:="English Indy", Item:="[Indy English]"
+        dict.Add Key:="French Indy", Item:="[Indy French]"
+        dict.Add Key:="HDW", Item:="[HOME HARDWARE]"
+        ReDim SelArr(1)
+        SelArr(1) = "[Account].[Hierarchy].[Account Name].&" & dict(SelKeyCust)
+    End If
+    
+    Debug.Print SelArr(1)
+    
+    ws_PMPriceM.Range("E2").Value = SelKeyCust
+    ws_MassMod.Range("H1").Value = SelKeyCust
+
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+    
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+        
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Group]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Account Name]").VisibleItemsList = SelArr
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Sub Account]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Account].[Hierarchy].[Key Customer]").VisibleItemsList = Array("")
+    
+    'Set the valid weeks
+    Dim StWk, EndWk, Yr, i, z As Integer
+    Dim WkArray() As Variant
+    StWk = ws_PMPriceM.Range("E3").Value
+    EndWk = ws_PMPriceM.Range("E4").Value
+    Yr = ws_PMPriceM.Range("E5").Value
+    Debug.Print "Planner Starts from week " & StWk
+    Debug.Print "Planner Ends in week " & EndWk
+    z = EndWk - StWk + 1
+    Debug.Print "Total Weeks Selected: " & z
+    ReDim WkArray(1 To z)
+
+    For i = 1 To z
+        WkArray(i) = "[Calendar 445].[445-Calendar].[Fiscal Week].&[" & StWk & "]&[" & Yr & "]"
+        StWk = StWk + 1
+    Next i
+    
+    For i = LBound(WkArray) To UBound(WkArray)
+        Debug.Print WkArray(i)
+    Next i
+
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_PMPriceM.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_IndKey.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+   
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_MarginTire.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_EDLCUp.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_Channel.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_MassMod.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_edit.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+        
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Quarter]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Month Name]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]").VisibleItemsList = WkArray
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Full Date]").VisibleItemsList = Array("")
+    ws_atPG.PivotTables("PivotTable1").PivotFields( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year]").PivotItems( _
+        "[Calendar 445].[445-Calendar].[Fiscal Year].&[" & Yr & "]").DrillTo _
+        "[Calendar 445].[445-Calendar].[Fiscal Week]"
+    
+    '// Validation preparation
+    Dim wb As Workbook
+    Dim ws_Valid As Worksheet
+    
+    '// Is Existing WorkSheet
+    Dim ws As Worksheet
+    For Each ws In Sheets
+        If ws.Name = "Validation" Then
+            ws.delete
+        End If
+    Next
+    
+    '// Create Working file'
+    Set wb = ThisWorkbook
+    Set ws_Valid = wb.Sheets.Add(After:=wb.Worksheets(6))
+    ws_Valid.Name = "Validation"
+    
+    '// Copy paste from Sheet 1-3
+    Dim LR_PMPriceM, LR_IndKey, LR_MarginTire As Long
+    LR_PMPriceM = ws_PMPriceM.Cells(Rows.Count, 4).End(xlUp).Row
+    LR_IndKey = ws_IndKey.Cells(Rows.Count, 4).End(xlUp).Row
+    LR_MarginTire = ws_MarginTire.Cells(Rows.Count, 4).End(xlUp).Row
+    
+    ws_PMPriceM.Activate
+    Range(ws_PMPriceM.Cells(11, 4).Address & ":" & ws_PMPriceM.Cells(LR_PMPriceM, 4).Address).Copy
+    ws_Valid.Range("A3").PasteSpecial Paste:=xlPasteValues
+    ws_IndKey.Activate
+    Range(ws_IndKey.Cells(11, 4).Address & ":" & ws_IndKey.Cells(LR_IndKey, 4).Address).Copy
+    ws_Valid.Range("C3").PasteSpecial Paste:=xlPasteValues
+    ws_MarginTire.Activate
+    Range(ws_MarginTire.Cells(11, 4).Address & ":" & ws_MarginTire.Cells(LR_MarginTire, 4).Address).Copy
+    ws_Valid.Range("E3").PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    '// Cross Validation
+    Dim ws_allM, ws_noex As Worksheet
+    Set ws_allM = Sheets("All_Models")
+    Set ws_noex = Sheets("no_exclusive")
+    Dim LR_noex, LR_allM As Long
+    LR_noex = ws_noex.Cells(Rows.Count, 1).End(xlUp).Row
+    LR_allM = ws_allM.Cells(Rows.Count, 1).End(xlUp).Row
+
+    'Copy all Models from no exclusive
+    SelKeyCust = ws_MassMod.Range("H1").Value
+    
+    Dim dictCol As New Scripting.Dictionary
+    dictCol.Add Key:="AM CAM", Item:="AG"
+    dictCol.Add Key:="BMTC", Item:="AE"
+    dictCol.Add Key:="CAS", Item:="BB"
+    dictCol.Add Key:="Trail", Item:="AI"
+    dictCol.Add Key:="English Indy", Item:="Y"
+    dictCol.Add Key:="French Indy", Item:="AC"
+    dictCol.Add Key:="HDW", Item:="AI"
+
+    Debug.Print "Column Index: " & dictCol(SelKeyCust)
+    Debug.Print "Column Number: " & Range(dictCol(SelKeyCust) & "4").Column
+    
+    ws_noex.Activate
+    On Error Resume Next
+    ws_noex.ShowAllData
+    Range("A4:BB" & LR_noex).AutoFilter Field:=Range(dictCol(SelKeyCust) & "4").Column, Criteria1:="<>"
+    ws_noex.Range("L4:L" & LR_noex).SpecialCells(xlCellTypeVisible).Copy
+    'Range("P6:P" & Cells(Rows.Count, "C").End(xlUp).Row).SpecialCells(xlCellTypeVisible).Select
+    'Range(Selection, Selection.End(xlDown)).Copy Destination:=ws_Valid.Range("G3")
+    ws_Valid.Range("G3").PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    ' // Delete duplicate and sort
+    ws_Valid.Activate
+    Range("$A$3:$A$" & (LR_PMPriceM - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$A$3:$A$" & Cells(Rows.Count, 1).End(xlUp).Row).Sort Key1:=Range("A3:A" & Cells(Rows.Count, 1).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    Range("$C$3:$C$" & (LR_IndKey - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$C$3:$C$" & Cells(Rows.Count, 3).End(xlUp).Row).Sort Key1:=Range("C3:C" & Cells(Rows.Count, 3).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    Range("$E$3:$E$" & (LR_MarginTire - 8)).RemoveDuplicates Columns:=1, Header:=xlYes
+    Range("$E$3:$E$" & Cells(Rows.Count, 5).End(xlUp).Row).Sort Key1:=Range("E3:E" & Cells(Rows.Count, 5).End(xlUp).Row), order1:=xlAscending, Header:=xlYes
+    
+    Range("A1").Formula = "=COUNTA(A4:A" & Cells(Rows.Count, 1).End(xlUp).Row & ")"
+    Range("B1").Formula = "=A1-C1"
+    Range("C1").Formula = "=COUNTA(C4:C" & Cells(Rows.Count, 3).End(xlUp).Row & ")"
+    Range("D1").Formula = "=C1-E1"
+    Range("E1").Formula = "=COUNTA(E4:E" & Cells(Rows.Count, 5).End(xlUp).Row & ")"
+    Range("G1").Formula = "=COUNTA(G4:G" & Cells(Rows.Count, 7).End(xlUp).Row & ")"
+    Range("A2").Value = "All Key Customer"
+    Range("C2").Value = "Individual"
+    Range("E2").Value = "With Margin"
+    Range("G2").Value = "Master Price List - " & SelKeyCust
+    Range("B3, D3, F3").Value = "Check"
+    Range("B4").Formula = "=MATCH(A4,$C$4:$C$" & Cells(Rows.Count, 3).End(xlUp).Row & ",0)"
+    Range("B4").AutoFill Destination:=Range("B4:B" & Cells(Rows.Count, 1).End(xlUp).Row)
+    Range("D4").Formula = "=MATCH(C4,$E$4:$E$" & Cells(Rows.Count, 5).End(xlUp).Row & ",0)"
+    Range("D4").AutoFill Destination:=Range("D4:D" & Cells(Rows.Count, 3).End(xlUp).Row)
+    Range("F4").Formula = "=MATCH(E4,$G$4:$G$" & Cells(Rows.Count, 7).End(xlUp).Row & ",0)"
+    Range("F4").AutoFill Destination:=Range("F4:F" & Cells(Rows.Count, 5).End(xlUp).Row)
+    
+    'Create button for next macro
+    ws_Valid.Shapes.AddShape(msoShapeRoundedRectangle, 510, 3, 132.75, 24).Name = "Validation"
+    ws_Valid.Shapes("Validation").Select
+    Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = "Rough Validation"
+    Selection.ShapeRange(1).TextFrame2.TextRange.Characters(1, 16).ParagraphFormat.Alignment = msoAlignCenter
+    Selection.OnAction = "Validation"
+    Range("O1").Value = "4. Auto Validation, please check manually if necessary"
+    Range("L1").Select
+    
+    ws_PMPriceM.Activate
+    
+    Call OptimizeCode_End
+    
+End Sub
+
+
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
+
+
+
