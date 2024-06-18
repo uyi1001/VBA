@@ -1,0 +1,497 @@
+
+    'Highlight applied month
+    Dim Minput, Yinput As Double
+    Minput = InputBox("Month to analyze, number", "Month", Format(Date - 30, "m"))
+    Yinput = InputBox("Year to analyze", "Year", Format(Date - 30, "yyyy"))
+    For i = Minput To 12
+        On Error Resume Next
+        With pv_STA_N.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Yinput & "*" & Format(i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    
+    On Error Resume Next
+    With pv_STA_N.PivotFields("Sales PGM Name")
+        .ClearAllFilters
+        .PivotFilters.Add Type:=xlCaptionContains, Value1:=Yinput + 1 & "]"
+    End With
+    Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+
+    pv_STA_N.PivotFields("Sales PGM Name").ClearAllFilters
+
+
+
+
+' Below is auto format for previous month report, for input month and year edit part of the code above:
+
+
+Option Explicit
+Public CalcState As Long
+Public EventState As Boolean
+Public PageBreakState As Boolean
+Sub OptimizeCode_Begin()
+
+Application.ScreenUpdating = False
+
+EventState = Application.EnableEvents
+Application.EnableEvents = False
+
+CalcState = Application.Calculation
+Application.Calculation = xlAutomatic
+
+PageBreakState = ActiveSheet.DisplayPageBreaks
+ActiveSheet.DisplayPageBreaks = False
+
+Application.DisplayAlerts = False
+
+End Sub
+
+Sub OptimizeCode_End()
+
+ActiveSheet.DisplayPageBreaks = PageBreakState
+Application.Calculation = CalcState
+Application.EnableEvents = EventState
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+End Sub
+Sub NTSOGeneralFormat()
+'
+' NTSOGeneralFormat Macro
+'
+
+'
+
+
+    Call OptimizeCode_Begin
+    
+    Dim ws_list, ws_details, ws_HA As Worksheet
+    Dim LArray, CXArray, RegArray As Variant
+    Dim i As Integer
+    
+    Set ws_list = Sheets("List")
+    Set ws_details = Sheets("Budget Used Details DB")
+    
+    'Set National/Regional list
+    ws_list.Visible = True
+    ws_list.Activate
+    CXArray = Split("Customer Name/RONA INC/BEST BUY CANADA LTD./COSTCO/LEON'S FURNITURE LIMITED (HA)/HOME DEPOT/THE BRICK WAREHOUSE/COSTCO - VEN # 5456-00/THE BRICK WAREHOUSE LP (BUILDER)", "/")
+    RegArray = Split("N or R/National/National/National/National/National/National/National/National", "/")
+    For i = 0 To UBound(CXArray)
+        Range("I" & 3 + i).Value = CXArray(i)
+        Range("J" & 3 + i).Value = RegArray(i)
+    Next i
+    Range("F3:G11").Copy
+    Range("I3").PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+    'Select only HA models
+    ws_details.Activate
+    Columns("B:G").Font.ColorIndex = xlAutomatic
+    Range("B3:AR" & Cells(Rows.Count, "H").End(xlUp).Row).AutoFilter Field:=3, Criteria1:=Array( _
+        "CDT", "CNT", "CVT", "DFT"), Operator:=xlFilterValues
+    Sheets.Add(After:=ws_details).Name = "HA"
+    Set ws_HA = Sheets("HA")
+    ws_details.Cells.Copy
+    ws_HA.Select
+    ActiveSheet.Paste
+    Dim LstRow As Long
+    LstRow = Cells(Rows.Count, "H").End(xlUp).Row
+    
+    'Set Region
+    Range("AR3").Value = "National/Regional"
+    Range("AR4").Formula = "=IFNA(VLOOKUP(AD4,List!I:J,2,0),""Regional"")"
+    Range("AR4").AutoFill Destination:=Range("AR4:AR" & LstRow)
+    
+    'Set topup/non topup
+    Range("AN3").Value = "Topup/Non-Topup"
+    Range("B3:AR" & LstRow).AutoFilter Field:=25, Criteria1:= _
+        "=*top*", Operator:=xlOr, Criteria2:="=yyy*"
+    Range("AN3:AN" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).Value = "TU"
+    ws_HA.ShowAllData
+    Range("B3:AR" & LstRow).AutoFilter Field:=39, Criteria1:="", Operator:=xlAnd
+    Range("AN3:AN" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).Value = "NonTU"
+    ws_HA.ShowAllData
+    
+    'Set SPIFF
+    Range("S3").Value = "SPIFF"
+    Range("B3:AR" & LstRow).AutoFilter Field:=25, Criteria1:= _
+        "=*spiff*", Operator:=xlAnd
+    Range("S3:S" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).Value = "Y"
+    ws_HA.ShowAllData
+    Range("B3:AR" & LstRow).AutoFilter Field:=18, Criteria1:="", Operator:=xlAnd
+    Range("S3:S" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).Value = "N"
+    ws_HA.ShowAllData
+    
+    'Modify Qty
+    Range("AK3").Value = "Adjusted Qty"
+    Range("B3:AR" & LstRow).AutoFilter Field:=32, Criteria1:= _
+        "=*Z03*", Operator:=xlOr, Criteria2:="=*Z08*"
+    Range("AK3:AK" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).Value = "0"
+    ws_HA.ShowAllData
+    Range("B3:AR" & LstRow).AutoFilter Field:=16, Criteria1:="<>0", Operator:=xlAnd
+    Range("AK3:AK" & LstRow - 1).Offset(1).SpecialCells(xlCellTypeVisible).FormulaR1C1 = "=RC[4]/RC[-1]"
+    ws_HA.ShowAllData
+    
+    'Pivot Table STA
+    Dim PivotSource As Range
+    Set PivotSource = ws_HA.Range("B3:AR" & LstRow)
+    Sheets.Add(Before:=ws_HA).Name = "STA_Z02Z03"
+    Dim ws_STA As Worksheet
+    Set ws_STA = Sheets("STA_Z02Z03")
+    
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        PivotSource).CreatePivotTable _
+        TableDestination:=ws_STA.Range("A1"), TableName:="STA_N"
+    ws_STA.Select
+    Dim pv_STA_N As PivotTable
+    Set pv_STA_N = ws_STA.PivotTables("STA_N")
+    With pv_STA_N.PivotFields("Division Code")
+        .Orientation = xlPageField
+        .Position = 1
+        .CurrentPage = "CDT"
+    End With
+    With pv_STA_N.PivotFields("National/Regional")
+        .Orientation = xlPageField
+        .Position = 1
+        .CurrentPage = "National"
+    End With
+    With pv_STA_N.PivotFields("Topup/Non-Topup")
+        .Orientation = xlPageField
+        .Position = 1
+        .CurrentPage = "NonTU"
+    End With
+    With pv_STA_N.PivotFields("SPIFF")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+    With pv_STA_N.PivotFields("Customer Name")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    With pv_STA_N.PivotFields("Reason Code")
+        .Orientation = xlRowField
+        .Position = 2
+    End With
+    Dim pi As PivotItem
+    For Each pi In pv_STA_N.PivotFields("Reason Code").PivotItems
+        Select Case pi.Name
+            Case Is = "TM_Z02", "TM_Z03"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    With pv_STA_N.PivotFields("Promotion No")
+        .Orientation = xlRowField
+        .Position = 3
+    End With
+    With pv_STA_N.PivotFields("Promotion Name")
+        .Orientation = xlRowField
+        .Position = 4
+    End With
+    With pv_STA_N.PivotFields("Sales PGM Name")
+        .Orientation = xlRowField
+        .Position = 5
+    End With
+    pv_STA_N.AddDataField pv_STA_N.PivotFields("Adjusted Qty"), "Sum of Adjusted Qty", xlSum
+    pv_STA_N.PivotFields("Sum of Adjusted Qty").NumberFormat = "0_);(0)"
+    pv_STA_N.AddDataField pv_STA_N.PivotFields("Spending"), "Sum of Spending", xlSum
+    pv_STA_N.PivotFields("Sum of Spending").NumberFormat = "#,##0.00_);(#,##0.00)"
+    'Reset format
+    With pv_STA_N
+        .InGridDropZones = True
+        .RowAxisLayout xlTabularRow
+    End With
+    Dim lX As Long
+    For lX = 1 To pv_STA_N.RowFields.Count
+        pv_STA_N.RowFields(lX).Subtotals = Array( _
+            False, False, False, False, False, False, False, False, False, False, False, False)
+    Next
+    pv_STA_N.RepeatAllLabels xlRepeatLabels
+    Cells.EntireColumn.AutoFit
+    'Highlight applied month
+    Dim Pmonth As Double
+    Pmonth = Format(Date - 30, "m")
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With pv_STA_N.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date - 30, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    pv_STA_N.PivotFields("Sales PGM Name").ClearAllFilters
+
+    'Copy the Pivot to VMI
+    ws_STA.Copy Before:=ws_HA
+    ActiveSheet.Name = "VMI_C23"
+    Dim ws_VMI As Worksheet
+    Set ws_VMI = Sheets("VMI_C23")
+    Dim pv_VMI As PivotTable
+    ws_VMI.PivotTables("STA_N").Name = "VMI"
+    Set pv_VMI = ws_VMI.PivotTables("VMI")
+    For Each pi In pv_VMI.PivotFields("Customer Name").PivotItems
+        Select Case pi.Name
+            Case Is = "COSTCO", "HOME DEPOT"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    For Each pi In pv_VMI.PivotFields("Reason Code").PivotItems
+        Select Case pi.Name
+            Case Is = "TM_C23"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    'Highlight applied month
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With pv_VMI.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    pv_VMI.PivotFields("Sales PGM Name").ClearAllFilters
+    LstRow = Cells(Rows.Count, "C").End(xlUp).Row
+    'Copy include all topups
+    Dim temp_LR As Long
+    temp_LR = Cells(Rows.Count, "A").End(xlUp).Row
+    Range("A1:G" & temp_LR).Copy Destination:=Range("A" & (temp_LR + 3))
+    Range("A" & (temp_LR + 3)).Select
+    Dim pv_VMI_All As PivotTable
+    ActiveCell.PivotTable.Name = "VMI_all"
+    Set pv_VMI_All = ws_VMI.PivotTables("VMI_all")
+    pv_VMI_All.PivotFields("Topup/Non-Topup").CurrentPage = "All"
+    'Calculation for sum
+    Range("A6:G" & LstRow).Copy Destination:=Range("I6")
+    Application.CutCopyMode = False
+    Range("I7:O" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("I7:I" & LstRow - 1).Offset(1, 0).SpecialCells(xlCellTypeVisible).Copy Destination:=Range("I" & LstRow + 3)
+    Application.CutCopyMode = False
+    Range("I" & LstRow + 3 & ":I" & Cells(Rows.Count, "I").End(xlUp).Row).Select
+    Selection.RemoveDuplicates Columns:=1, Header:=xlNo
+    Range("J" & LstRow + 3).FormulaR1C1 = "=SUBTOTAL(9, INDIRECT(""O""&MATCH(RC[-1],C[-1],0)):INDIRECT(""O""&MATCH(RC[-1],C[-1])))"
+    Range("J" & LstRow + 3).AutoFill Destination:=Range("J" & LstRow + 3 & ":J" & Cells(Rows.Count, "I").End(xlUp).Row)
+    Range("J" & LstRow + 3 & ":J" & Cells(Rows.Count, "I").End(xlUp).Row).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    'Copy the Pivot to National MDF
+    ws_STA.Copy Before:=ws_HA
+    ActiveSheet.Name = "National MDF"
+    Dim ws_MDF_N As Worksheet
+    Set ws_MDF_N = Sheets("National MDF")
+    Dim pv_MDF_N As PivotTable
+    ws_MDF_N.PivotTables("STA_N").Name = "MDF_N"
+    Set pv_MDF_N = ws_MDF_N.PivotTables("MDF_N")
+    For Each pi In pv_MDF_N.PivotFields("Customer Name").PivotItems
+        Select Case pi.Name
+            Case Is = "COSTCO", "HOME DEPOT"
+                pi.Visible = False
+            Case Else
+                pi.Visible = True
+        End Select
+    Next
+    For Each pi In pv_MDF_N.PivotFields("Reason Code").PivotItems
+        Select Case pi.Name
+            Case Is = "TM_C21", "TM_C22", "TM_C23", "TM_C24", "TM_C25", "TM_C26", "TM_C27", "TM_Z08", "TM_Z90"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    Range("C1").Value = "National MDF (C01-C27, Z08, Z90, excluding VMI C23)"
+    'Highlight applied month
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With pv_MDF_N.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    pv_MDF_N.PivotFields("Sales PGM Name").ClearAllFilters
+    LstRow = Cells(Rows.Count, "C").End(xlUp).Row
+    'Copy include all topups
+    temp_LR = Cells(Rows.Count, "A").End(xlUp).Row
+    Range("A1:G" & temp_LR).Copy Destination:=Range("A" & (temp_LR + 3))
+    Range("A" & (temp_LR + 3)).Select
+    Dim pv_MDFN_All As PivotTable
+    ActiveCell.PivotTable.Name = "MDFN_all"
+    Set pv_MDFN_All = ws_MDF_N.PivotTables("MDFN_all")
+    pv_MDFN_All.PivotFields("Topup/Non-Topup").CurrentPage = "All"
+    'Calculation for sum
+    Range("A6:G" & LstRow).Copy Destination:=Range("I6")
+    Application.CutCopyMode = False
+    Range("I7:O" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("I7:I" & LstRow - 1).Offset(1, 0).SpecialCells(xlCellTypeVisible).Copy Destination:=Range("I" & LstRow + 3)
+    Application.CutCopyMode = False
+    Range("I" & LstRow + 3 & ":I" & Cells(Rows.Count, "I").End(xlUp).Row).Select
+    Selection.RemoveDuplicates Columns:=1, Header:=xlNo
+    Range("J" & LstRow + 3).FormulaR1C1 = "=SUBTOTAL(9, INDIRECT(""O""&MATCH(RC[-1],C[-1],0)):INDIRECT(""O""&MATCH(RC[-1],C[-1])))"
+    Range("J" & LstRow + 3).AutoFill Destination:=Range("J" & LstRow + 3 & ":J" & Cells(Rows.Count, "I").End(xlUp).Row)
+    Range("J" & LstRow + 3 & ":J" & Cells(Rows.Count, "I").End(xlUp).Row).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    'Copy the Pivot to Regional MDF
+    ws_STA.Copy Before:=ws_HA
+    ActiveSheet.Name = "Regional MDF"
+    Dim ws_MDF_R As Worksheet
+    Set ws_MDF_R = Sheets("Regional MDF")
+    Dim pv_MDF_R As PivotTable
+    ws_MDF_R.PivotTables("STA_N").Name = "MDF_R"
+    Set pv_MDF_R = ws_MDF_R.PivotTables("MDF_R")
+    pv_MDF_R.PivotFields("National/Regional").CurrentPage = "Regional"
+    With pv_MDF_R.PivotFields("Requestor")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    For lX = 1 To pv_MDF_R.RowFields.Count
+        pv_MDF_R.RowFields(lX).Subtotals = Array( _
+            False, False, False, False, False, False, False, False, False, False, False, False)
+    Next
+    For Each pi In pv_MDF_R.PivotFields("Reason Code").PivotItems
+        Select Case pi.Name
+            Case Is = "TM_C21", "TM_C22", "TM_C23", "TM_C24", "TM_C25", "TM_C26", "TM_C27", "TM_Z08", "TM_Z90"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    Range("C1").Value = "Regional MDF (C01-C27, Z08, Z90)"
+    'Highlight applied month
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With pv_MDF_R.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    pv_MDF_R.PivotFields("Sales PGM Name").ClearAllFilters
+    LstRow = Cells(Rows.Count, "D").End(xlUp).Row
+    'Copy include all topups
+    temp_LR = Cells(Rows.Count, "A").End(xlUp).Row
+    Range("A1:H" & temp_LR).Copy Destination:=Range("A" & (temp_LR + 3))
+    Range("A" & (temp_LR + 3)).Select
+    Dim pv_MDFR_All As PivotTable
+    ActiveCell.PivotTable.Name = "MDFR_all"
+    Set pv_MDFR_All = ws_MDF_R.PivotTables("MDFR_all")
+    pv_MDFR_All.PivotFields("Topup/Non-Topup").CurrentPage = "All"
+    'Calculation for sum
+    Range("A6:H" & LstRow).Copy Destination:=Range("J6")
+    Application.CutCopyMode = False
+    Range("J7:Q" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("Q" & LstRow + 1).FormulaR1C1 = "=SUBTOTAL(9,Q8:Q" & LstRow & ")"
+    Range("Q" & LstRow + 1).Replace What:="'", Replacement:=""
+    Range("Q" & LstRow + 1).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    'Copy the Pivot to SPIFF
+    ws_STA.Copy Before:=ws_HA
+    ActiveSheet.Name = "SPIFF"
+    Dim ws_SPIFF As Worksheet
+    Set ws_SPIFF = Sheets("SPIFF")
+    Dim pv_SPIFF As PivotTable
+    ws_SPIFF.PivotTables("STA_N").Name = "SPIFF"
+    Set pv_SPIFF = ws_SPIFF.PivotTables("SPIFF")
+    pv_SPIFF.PivotFields("National/Regional").CurrentPage = "Regional"
+    pv_SPIFF.PivotFields("SPIFF").CurrentPage = "Y"
+    For Each pi In pv_SPIFF.PivotFields("Reason Code").PivotItems
+        Select Case pi.Name
+            Case Is = "TM_Z02", "TM_Z03"
+                pi.Visible = True
+            Case Else
+                pi.Visible = False
+        End Select
+    Next
+    'Highlight applied month
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With pv_SPIFF.PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    pv_SPIFF.PivotFields("Sales PGM Name").ClearAllFilters
+    LstRow = Cells(Rows.Count, "C").End(xlUp).Row
+    'Copy include all topups
+    temp_LR = Cells(Rows.Count, "A").End(xlUp).Row
+    Range("A1:G" & temp_LR).Copy Destination:=Range("A" & (temp_LR + 3))
+    Range("A" & (temp_LR + 3)).Select
+    Dim pv_SPIFF_All As PivotTable
+    ActiveCell.PivotTable.Name = "SPIFF_all"
+    Set pv_SPIFF_All = ws_SPIFF.PivotTables("SPIFF_all")
+    pv_SPIFF_All.PivotFields("Topup/Non-Topup").CurrentPage = "All"
+    'Calculation for sum
+    Range("A6:G" & LstRow).Copy Destination:=Range("I6")
+    Application.CutCopyMode = False
+    Range("I7:O" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("O" & LstRow + 1).FormulaR1C1 = "=SUBTOTAL(9,O8:O" & LstRow & ")"
+    Range("O" & LstRow + 1).Replace What:="'", Replacement:=""
+    Range("O" & LstRow + 1).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    'Calculation for sum
+    ws_STA.Select
+    LstRow = Cells(Rows.Count, "C").End(xlUp).Row
+    Range("A6:G" & LstRow).Copy Destination:=Range("I6")
+    Application.CutCopyMode = False
+    Range("I7:O" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("I7:I" & LstRow - 1).Offset(1, 0).SpecialCells(xlCellTypeVisible).Copy Destination:=Range("A" & LstRow + 4)
+    Application.CutCopyMode = False
+    Range("A" & LstRow + 4 & ":A" & Cells(Rows.Count, "A").End(xlUp).Row).Select
+    Selection.RemoveDuplicates Columns:=1, Header:=xlNo
+    Range("B" & LstRow + 4).FormulaR1C1 = "=SUBTOTAL(9, INDIRECT(""O""&MATCH(RC[-1],C[7],0)):INDIRECT(""O""&MATCH(RC[-1],C[7])))"
+    Range("B" & LstRow + 4).AutoFill Destination:=Range("B" & LstRow + 4 & ":B" & Cells(Rows.Count, "A").End(xlUp).Row)
+    Range("B" & LstRow + 4 & ":B" & Cells(Rows.Count, "A").End(xlUp).Row).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    Call OptimizeCode_End
+    
+    
+    
+End Sub
+
+
+
+
+Sub Highlight()
+
+'Highlight applied month
+    Dim i, Pmonth As Double
+    Pmonth = Format(Date - 30, "m")
+    For i = -1 To 11 - Pmonth
+        On Error Resume Next
+        With ActiveSheet.PivotTables("STA_N").PivotFields("Sales PGM Name")
+            .ClearAllFilters
+            .PivotFilters.Add Type:=xlCaptionContains, Value1:="[" & Format(Date, "yyyy") & "*" & Format(Date + i * 30, "MMM")
+        End With
+        Range("E7:E" & Cells(Rows.Count, "A").End(xlUp).Row - 1).Offset(1, 0).Interior.Color = 65535
+    Next
+    ActiveSheet.PivotTables("STA_N").PivotFields("Sales PGM Name").ClearAllFilters
+
+End Sub
+
+
+Sub test()
+
+    Dim LstRow As Long
+    LstRow = Cells(Rows.Count, "D").End(xlUp).Row
+    Range("A6:G" & LstRow).Copy Destination:=Range("I6")
+    Application.CutCopyMode = False
+    Range("I7:O" & LstRow).AutoFilter Field:=5, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+    Range("I7:I" & LstRow - 1).Offset(1, 0).SpecialCells(xlCellTypeVisible).Copy Destination:=Range("A" & LstRow + 4)
+    Range("A" & LstRow + 4 & ":A" & Cells(Rows.Count, "A").End(xlUp).Row).RemoveDuplicates Columns:=1, Header:=xlNo
+    Range("B" & LstRow + 4).FormulaR1C1 = "=SUBTOTAL(9, INDIRECT(""O""&MATCH(RC[-1],C[7],0)):INDIRECT(""O""&MATCH(R[1]C[-1],C[7],0)-1))"
+    Range("B" & LstRow + 4).AutoFill Destination:=Range("B" & LstRow + 4 & ":B" & Cells(Rows.Count, "A").End(xlUp).Row - 1)
+    Range("B" & Cells(Rows.Count, "A").End(xlUp).Row).FormulaR1C1 = "=SUBTOTAL(9, INDIRECT(""O""&MATCH(RC[-1],C[7],0)):O" & LstRow & ")"
+    Range("B" & Cells(Rows.Count, "A").End(xlUp).Row).Replace What:="'", Replacement:=""
+    Range("B" & LstRow + 4 & ":B" & Cells(Rows.Count, "A").End(xlUp).Row).NumberFormat = "_-* #,##0_-;-* #,##0_-;_-* ""-""??_-;_-@_-"
+    
+    
+    
+End Sub
